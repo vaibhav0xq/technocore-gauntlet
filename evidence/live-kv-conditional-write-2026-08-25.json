@@ -1,0 +1,251 @@
+{
+  "format": "technocore-gauntlet-live-probe/v1",
+  "target": "https://technocore.chat",
+  "namespace": "gauntlet-probe-f7d2cf09",
+  "key": "probe",
+  "observedAt": "2026-08-25T18:02:11.030Z",
+  "documentationSource": [
+    "https://technocore.chat/ (CONDITIONAL NOTES section)",
+    "https://technocore.chat/openapi.json"
+  ],
+  "method": "Each step reads the note, issues one write, then reads it again. A write is counted only when the stored value changed.",
+  "cases": [
+    {
+      "id": "seed",
+      "lane": "GET",
+      "contract": "documented",
+      "request": {
+        "method": "GET",
+        "url": "/kv/gauntlet-probe-f7d2cf09/probe/set/base",
+        "body": null
+      },
+      "documented": "Unconditional write establishes a known value.",
+      "expected": {
+        "status": 200,
+        "writes": true
+      },
+      "actual": {
+        "status": 200,
+        "writes": true,
+        "valueBefore": null,
+        "valueAfter": "base",
+        "responseFirstLine": "ok gauntlet-probe-f7d2cf09/probe 4B 2026-08-25T18:01:49.853893Z"
+      },
+      "verdict": "documented-match"
+    },
+    {
+      "id": "get-if-stale",
+      "lane": "GET",
+      "contract": "documented",
+      "request": {
+        "method": "GET",
+        "url": "/kv/gauntlet-probe-f7d2cf09/probe/set/a?if=WRONG",
+        "body": null
+      },
+      "documented": "GET /kv/<ns>/<key>/set/<value>?if=<what you last read>",
+      "expected": {
+        "status": 409,
+        "writes": false
+      },
+      "actual": {
+        "status": 409,
+        "writes": false,
+        "valueBefore": "base",
+        "valueAfter": "base",
+        "responseFirstLine": "409 note gauntlet-probe-f7d2cf09/probe changed since you read it"
+      },
+      "verdict": "documented-match"
+    },
+    {
+      "id": "post-body-if-stale",
+      "lane": "POST",
+      "contract": "documented",
+      "request": {
+        "method": "POST",
+        "url": "/kv/gauntlet-probe-f7d2cf09/probe",
+        "body": {
+          "value": "b",
+          "if": "WRONG"
+        }
+      },
+      "documented": "POST /kv/<ns>/<key> {\"value\":.., \"if\":..}",
+      "expected": {
+        "status": 409,
+        "writes": false
+      },
+      "actual": {
+        "status": 409,
+        "writes": false,
+        "valueBefore": "base",
+        "valueAfter": "base",
+        "responseFirstLine": "409 note gauntlet-probe-f7d2cf09/probe changed since you read it"
+      },
+      "verdict": "documented-match"
+    },
+    {
+      "id": "get-if-current",
+      "lane": "GET",
+      "contract": "documented",
+      "request": {
+        "method": "GET",
+        "url": "/kv/gauntlet-probe-f7d2cf09/probe/set/c?if=base",
+        "body": null
+      },
+      "documented": "A matching if= wins the CAS.",
+      "expected": {
+        "status": 200,
+        "writes": true
+      },
+      "actual": {
+        "status": 200,
+        "writes": true,
+        "valueBefore": "base",
+        "valueAfter": "c",
+        "responseFirstLine": "ok gauntlet-probe-f7d2cf09/probe 1B 2026-08-25T18:01:56.562082Z"
+      },
+      "verdict": "documented-match"
+    },
+    {
+      "id": "get-if-absent-on-existing",
+      "lane": "GET",
+      "contract": "documented",
+      "request": {
+        "method": "GET",
+        "url": "/kv/gauntlet-probe-f7d2cf09/probe/set/d?if_absent=1",
+        "body": null
+      },
+      "documented": "if_absent=1 against a key that exists.",
+      "expected": {
+        "status": 409,
+        "writes": false
+      },
+      "actual": {
+        "status": 409,
+        "writes": false,
+        "valueBefore": "c",
+        "valueAfter": "c",
+        "responseFirstLine": "409 note gauntlet-probe-f7d2cf09/probe already exists"
+      },
+      "verdict": "documented-match"
+    },
+    {
+      "id": "post-if-in-query",
+      "lane": "POST",
+      "contract": "undocumented",
+      "request": {
+        "method": "POST",
+        "url": "/kv/gauntlet-probe-f7d2cf09/probe?if=WRONG",
+        "body": {
+          "value": "e"
+        }
+      },
+      "documented": "Query form carried onto the POST lane, where the condition belongs in the body.",
+      "expected": null,
+      "actual": {
+        "status": 200,
+        "writes": true,
+        "valueBefore": "c",
+        "valueAfter": "e",
+        "responseFirstLine": "ok gauntlet-probe-f7d2cf09/probe 1B 2026-08-25T18:02:01.015357Z"
+      },
+      "verdict": "undocumented-fails-open"
+    },
+    {
+      "id": "get-if-misspelled",
+      "lane": "GET",
+      "contract": "undocumented",
+      "request": {
+        "method": "GET",
+        "url": "/kv/gauntlet-probe-f7d2cf09/probe/set/f?iff=WRONG",
+        "body": null
+      },
+      "documented": "Misspelled conditional parameter.",
+      "expected": null,
+      "actual": {
+        "status": 200,
+        "writes": true,
+        "valueBefore": "e",
+        "valueAfter": "f",
+        "responseFirstLine": "ok gauntlet-probe-f7d2cf09/probe 1B 2026-08-25T18:02:03.241809Z"
+      },
+      "verdict": "undocumented-fails-open"
+    },
+    {
+      "id": "get-if-wrong-case",
+      "lane": "GET",
+      "contract": "undocumented",
+      "request": {
+        "method": "GET",
+        "url": "/kv/gauntlet-probe-f7d2cf09/probe/set/g?IF=WRONG",
+        "body": null
+      },
+      "documented": "Conditional parameter in the wrong case.",
+      "expected": null,
+      "actual": {
+        "status": 200,
+        "writes": true,
+        "valueBefore": "f",
+        "valueAfter": "g",
+        "responseFirstLine": "ok gauntlet-probe-f7d2cf09/probe 1B 2026-08-25T18:02:05.472526Z"
+      },
+      "verdict": "undocumented-fails-open"
+    },
+    {
+      "id": "get-if-empty",
+      "lane": "GET",
+      "contract": "undocumented",
+      "request": {
+        "method": "GET",
+        "url": "/kv/gauntlet-probe-f7d2cf09/probe/set/h?if=",
+        "body": null
+      },
+      "documented": "Empty expected value.",
+      "expected": null,
+      "actual": {
+        "status": 409,
+        "writes": false,
+        "valueBefore": "g",
+        "valueAfter": "g",
+        "responseFirstLine": "409 note gauntlet-probe-f7d2cf09/probe changed since you read it"
+      },
+      "verdict": "undocumented-fails-closed"
+    },
+    {
+      "id": "post-if-absent-wrong-type",
+      "lane": "POST",
+      "contract": "undocumented",
+      "request": {
+        "method": "POST",
+        "url": "/kv/gauntlet-probe-f7d2cf09/probe",
+        "body": {
+          "value": "i",
+          "if_absent": "yes"
+        }
+      },
+      "documented": "if_absent as a string rather than a boolean.",
+      "expected": null,
+      "actual": {
+        "status": 409,
+        "writes": false,
+        "valueBefore": "g",
+        "valueAfter": "g",
+        "responseFirstLine": "409 note gauntlet-probe-f7d2cf09/probe already exists"
+      },
+      "verdict": "undocumented-fails-closed"
+    }
+  ],
+  "summary": {
+    "documentedChecked": 5,
+    "documentedDivergences": [],
+    "failsOpen": [
+      "post-if-in-query",
+      "get-if-misspelled",
+      "get-if-wrong-case"
+    ],
+    "failsClosed": [
+      "get-if-empty",
+      "post-if-absent-wrong-type"
+    ]
+  },
+  "digest": "20f3bd6202a050e811c1f0545f3d3217872cdc5f875500e52ae1f465985344b1"
+}

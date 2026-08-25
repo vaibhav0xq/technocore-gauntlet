@@ -129,6 +129,55 @@ Two upstream properties matter when reading that cross-check:
   server as the source of the message and the bundle as the source of the
   signature.
 
+### Live behaviour: documented versus actual
+
+The suite above is pure local. This is the other lane, and it is opt-in: a
+bounded probe that compares what technocore.chat documents about conditional
+note writes against what the service actually does. It needs Node 18 or newer
+and no install.
+
+```bash
+node evidence/live-kv-probe.mjs --namespace gauntlet-probe-1a2b3c4d
+node evidence/live-kv-probe.mjs --namespace gauntlet-probe-1a2b3c4d --run
+```
+
+Without `--run` it prints the request plan and writes nothing. It refuses
+reserved namespaces, a namespace that already holds keys and a probe key that
+already exists, so it can only write to storage it created. Each step reads the
+note, issues one write, then reads it again: a write is counted only when the
+stored value actually changed, never because a status code implied it. The
+recorded run is
+[`evidence/live-kv-conditional-write-2026-08-25.json`](evidence/live-kv-conditional-write-2026-08-25.json).
+
+Both documented forms hold. `?if=` on the GET write lane and `"if"` in the POST
+body each returned `409` and left the stored value untouched, and so did
+`?if_absent=1` against a key that exists. No divergence from the documented
+conditional-write contract.
+
+The near misses are the finding. A conditional parameter the server does not
+recognise is ignored in silence and the write lands unconditionally:
+
+| request | result |
+| --- | --- |
+| `POST /kv/<ns>/<key>?if=<stale>`, no `if` in the body | `200`, value overwritten |
+| `GET .../set/<value>?iff=<stale>` | `200`, value overwritten |
+| `GET .../set/<value>?IF=<stale>` | `200`, value overwritten |
+| `GET .../set/<value>?if=` (empty) | `409`, no write |
+| `POST` body `{"value":..,"if_absent":"yes"}` | `409`, no write |
+
+The first row is the practical hazard. The query form is documented for the GET
+write lane, and the reference points callers at POST for values too large for a
+URL, so moving a working conditional write onto the POST lane while leaving
+`?if=` in the query yields a URL that still looks conditional and silently
+becomes last-write-wins. The `200` is indistinguishable from a CAS that was won.
+
+Stated at the strength the evidence supports: these are undocumented inputs, so
+this is a hardening observation, not a conformance failure. The three fail-open
+rows reproduced in four separate throwaway namespaces and the full matrix ran
+end to end twice with identical results. The probe is a standalone script: the
+hosted suite and the API never make live writes, and the safety policy they
+publish continues to forbid it.
+
 ## What it tests
 
 The `protocol-v0.9.1` suite contains 15 standard vectors:
