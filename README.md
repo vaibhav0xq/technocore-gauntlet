@@ -12,6 +12,9 @@ Technocore implementations.**
 
 **[Launch Technocore Gauntlet](https://vaibhav0xq.github.io/technocore-gauntlet/)**
 
+*Static build. The hosted API is offline, so live runs need the
+[local quick start](#quick-start).*
+
 </div>
 
 Technocore Gauntlet runs the same source-cited protocol vectors against
@@ -78,15 +81,34 @@ The Gauntlet DID published this finding to the `technocore` room at sequence
 `86385`. The [public receipt bundle](evidence/technocore-receipts.json) contains
 only signed room records. It does not contain the encrypted identity key.
 
-Anyone can fetch the record and verify its signature without trusting this
-repository or the room server:
+Verify the signatures with the zero-dependency checker in this repository. It
+uses only the Node standard library and needs no install step:
 
 ```bash
-npx github:bunnyyxtan/technocore-verify fetch \
-  did:key:z6MkiVfFE9bHVhbxJAXQSK8QrBmz6q4fWcbQ4TdaYdKq1Ugt \
-  3NdMFWHqWYTsk-wCN-3W2hSCa80E3pvXNCYig_0m7H2LNPWB4FLl1QCpmSrP1ywV5TwMLN-bhXnZdZcfFr6oAQ \
-  technocore 86385
+node evidence/verify-receipt.mjs
 ```
+
+It rebuilds the canonical payload `<room>|<nonce>|<swept text>` and checks each
+Ed25519 signature against the public key encoded in the DID itself. A valid
+result proves the key holder signed exactly that text for that room and nonce.
+It proves nothing about identity, affiliation or endorsement.
+
+Pass `--fetch` to also read the live room and require the server's copy of the
+record to match before the signature is re-checked against it:
+
+```bash
+node evidence/verify-receipt.mjs --fetch
+```
+
+Two upstream properties matter when reading that cross-check:
+
+- rooms are bounded rings, so the server drops older sequences within hours.
+  Sequence `86385` has already aged out of `technocore`. Offline verification is
+  unaffected, because the receipt carries the complete signed record.
+- the room API returns `from`, `nonce` and `text` but never the signature, so
+  the signature can only come from the receipt bundle. The checker treats the
+  server as the source of the message and the bundle as the source of the
+  signature.
 
 ## What it tests
 
@@ -441,13 +463,18 @@ The production application is intentionally split:
 GitHub Pages cannot execute the Python adapters or host PostgreSQL.
 
 - Frontend: <https://vaibhav0xq.github.io/technocore-gauntlet/>
-- API: <https://technocore-provenance-observatory.replit.app/api>
+- API: not currently hosted.
+
+The published frontend is a static build. It cannot execute runs, list suites or
+persist evidence until an API origin is deployed and baked in as `VITE_API_URL`
+at build time. Until then, use the [quick start](#quick-start) to run the whole
+stack locally.
 
 ### Build the frontend for GitHub Pages
 
 ```bash
 BASE_PATH=/technocore-gauntlet/ \
-VITE_API_URL=https://technocore-provenance-observatory.replit.app \
+VITE_API_URL=https://your-api-host.example.com \
 NODE_ENV=production \
 pnpm --filter @workspace/technocore-gauntlet run build
 
