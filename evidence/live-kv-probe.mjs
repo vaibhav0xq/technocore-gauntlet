@@ -87,8 +87,11 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 // documented: what technocore.chat's reference and /openapi.json promise.
 // undocumented: a near miss a caller can plausibly make. There is no promise to
 // break, so the only question is whether it fails closed or silently writes.
-// Every step writes a value distinct from the one before it, so an effective
-// write always shows as a transition.
+// Each step writes a value distinct from the one the probe last wrote, so its
+// own effective writes show up as transitions. That is an observation about
+// before and after values, not a proof of causation: a concurrent writer in the
+// same namespace could still produce a transition, or mask one by writing the
+// same value this step was about to write.
 const plan = [
   { id: "claim-if-absent", lane: "GET", contract: "documented", url: () => `${noteUrl}/set/base?if_absent=1`, expectStatus: 200, expectWrite: true, note: "if_absent=1 against a key that does not exist. This is also how the probe takes the key." },
   { id: "get-if-stale", lane: "GET", contract: "documented", url: () => `${noteUrl}/set/a?if=WRONG`, expectStatus: 409, expectWrite: false, note: "GET /kv/<ns>/<key>/set/<value>?if=<what you last read>" },
@@ -183,7 +186,7 @@ const bundle = {
   key: KEY,
   observedAt: new Date().toISOString(),
   documentationSource: [`${base}/ (CONDITIONAL NOTES section)`, `${base}/openapi.json`],
-  method: "Each step reads the note, issues one write, then reads it again, and every step writes a value distinct from the current one. What is recorded is an observed transition, not proof of causation: notes are world-writable, so a concurrent writer in the same namespace could in principle produce or mask a change. The namespace is random and taken with if_absent=1, which makes that unlikely rather than impossible.",
+  method: "Each step reads the note, issues one write, then reads it again, and writes a value distinct from the one the probe last wrote. What is recorded is an observed before and after value, not proof that the request caused the difference. Notes are world-writable, so a concurrent writer in this namespace could produce a transition, or mask one by writing the same value the step was about to write. The namespace is random and the key is taken with if_absent=1, which makes that unlikely rather than impossible.",
   cases,
   summary,
   digest: "",

@@ -142,33 +142,37 @@ note writes against what the service actually does. It needs Node 18 or newer
 and no install.
 
 ```bash
-node evidence/live-kv-probe.mjs --namespace gauntlet-probe-1a2b3c4d
-node evidence/live-kv-probe.mjs --namespace gauntlet-probe-1a2b3c4d --run
+node evidence/live-kv-probe.mjs
+node evidence/live-kv-probe.mjs --run
 ```
 
-Without `--run` it prints the request plan and writes nothing. It refuses
-reserved namespaces, a namespace that already holds keys and a probe key that
-already exists, so it can only write to storage it created. Each step reads the
-note, issues one write, then reads it again: a write is counted only when the
-stored value actually changed, never because a status code implied it. The
-recorded run is
+Without `--run` it prints the request plan and writes nothing. Ownership cannot
+be proved over this protocol, because notes are world-writable, so the probe
+does not claim it. It generates its own random namespace, refuses reserved
+names, fails closed on any listing it cannot read, and takes the key with the
+protocol's own `if_absent=1`, which collapses the check and the first write into
+a single step and aborts if anything already holds it. Each step then reads the
+note, issues one write and reads it again, recording the before and after values
+rather than trusting the status code. The recorded run is
 [`evidence/live-kv-conditional-write-2026-08-25.json`](evidence/live-kv-conditional-write-2026-08-25.json).
 
-Every documented form checked out. `?if=` on the GET write lane and `"if"` in
-the POST body each returned `409` and left the stored value untouched; so did
-`if_absent` against an existing key, on both lanes; a matching `?if=` won the
-CAS; and `?if_absent=1` took an absent key. Six documented cases, no divergence.
+Every documented form behaved as documented. `?if=` on the GET write lane and
+`"if"` in the POST body each returned `409` with the stored value unchanged
+across the request; so did `if_absent` against an existing key, on both lanes; a
+matching `?if=` returned `200` with the value advanced; and `?if_absent=1` took
+an absent key. Six documented cases, no divergence.
 
-The near misses are the finding. A conditional parameter the server does not
-recognise is ignored in silence and the write lands unconditionally:
+The near misses are the finding. Where the server does not recognise the
+conditional parameter, nothing says so: the request returns `200` and the stored
+value moves on.
 
-| request | result |
+| request | observed |
 | --- | --- |
-| `POST /kv/<ns>/<key>?if=<stale>`, no `if` in the body | `200`, value overwritten |
-| `GET .../set/<value>?iff=<stale>` | `200`, value overwritten |
-| `GET .../set/<value>?IF=<stale>` | `200`, value overwritten |
-| `GET .../set/<value>?if=` (empty) | `409`, no write |
-| `POST` body `{"value":..,"if_absent":"yes"}` | `409`, no write |
+| `POST /kv/<ns>/<key>?if=<stale>`, no `if` in the body | `200`, value changed |
+| `GET .../set/<value>?iff=<stale>` | `200`, value changed |
+| `GET .../set/<value>?IF=<stale>` | `200`, value changed |
+| `GET .../set/<value>?if=` (empty) | `409`, value unchanged |
+| `POST` body `{"value":..,"if_absent":"yes"}` | `409`, value unchanged |
 
 The first row is the practical hazard. The query form is documented for the GET
 write lane, and the reference points callers at POST for values too large for a
