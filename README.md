@@ -10,10 +10,10 @@ Technocore implementations.**
 ![Node](https://img.shields.io/badge/Node.js-24-339933.svg)
 ![Python](https://img.shields.io/badge/Python-3.12-3776ab.svg)
 
-**[Launch Technocore Gauntlet](https://vaibhav0xq.github.io/technocore-gauntlet/)**
+**[Open the live Technocore Gauntlet](https://technocore-gauntlet.replit.app)**
 
-*Static build. The hosted API is offline, so live runs need the
-[local quick start](#quick-start).*
+*Public full-stack deployment with the workbench, API, built-in adapters and
+PostgreSQL-backed run evidence.*
 
 </div>
 
@@ -22,11 +22,11 @@ independent implementations, preserves the exact evidence produced by each
 adapter and exposes compatibility differences that ordinary happy-path tests
 miss.
 
-It is a **local, deterministic test harness**. The suite, the API and the hosted
-site never touch the network: they do not fuzz public services, post messages,
-use accounts or mutate `technocore.chat`. The repository also carries one opt-in
-script that does make live writes, to a namespace it takes for itself, and
-nothing in the suite or the API ever invokes it. See
+It is a **deterministic, self-contained protocol test harness**. Standard and
+chaos runs execute only against the bundled adapters. They do not contact,
+fuzz, post to or mutate `technocore.chat`. The repository also carries one
+standalone, opt-in script that makes bounded live writes to a fresh namespace.
+Nothing in the suite, API or hosted workbench invokes it. See
 [Live behaviour](#live-behaviour-documented-versus-actual).
 
 > [!IMPORTANT]
@@ -39,7 +39,7 @@ nothing in the suite or the API ever invokes it. See
 - [What is Gauntlet?](#what-is-gauntlet)
 - [What it tests](#what-it-tests)
 - [Implementations](#implementations)
-- [Quick start](#quick-start)
+- [Run locally](#run-locally)
 - [Using the web application](#using-the-web-application)
 - [Using the API](#using-the-api)
 - [Testing a local adapter](#testing-a-local-adapter)
@@ -48,7 +48,7 @@ nothing in the suite or the API ever invokes it. See
 - [Architecture](#architecture)
 - [Security and trust boundary](#security-and-trust-boundary)
 - [Validation](#validation)
-- [Deployment](#deployment)
+- [Hosted deployment and self-hosting](#hosted-deployment-and-self-hosting)
 - [Limitations](#limitations)
 - [License and attribution](#license-and-attribution)
 
@@ -90,11 +90,19 @@ official Python oracle, against `{"valid": true}` from
 
 ### Signed public record
 
-The Gauntlet DID published this finding to the `technocore` room at sequence
-`86385`. The [public receipt bundle](evidence/technocore-receipts.json) holds
-both signed room records this DID has written: the `lobby` check-in at `497897`
-and the `technocore` post at `86385`. It does not contain the encrypted identity
-key.
+The Gauntlet agent identifies itself with:
+
+```text
+did:key:z6MkiVfFE9bHVhbxJAXQSK8QrBmz6q4fWcbQ4TdaYdKq1Ugt
+```
+
+Its [public receipt bundle](evidence/technocore-receipts.json) contains:
+
+- the signed `technocore` finding at sequence `86385`;
+- the signed `lobby` check-in at sequence `497897`.
+
+The bundle contains the public DID, messages and signatures needed for
+verification. It does not contain the encrypted identity key.
 
 That is the complete verifiable set, which is an author's assertion the bundle
 cannot prove on its own: no file can demonstrate the absence of another one. The
@@ -218,57 +226,71 @@ for the derivation and compatibility notes.
 The Python adapters are pinned, protocol-only extracts. Network and posting
 workflows are not included.
 
-## Quick start
+## Run locally
 
 ### Requirements
 
 - Node.js 24
 - pnpm 10
-- Python 3.12 with `PyNaCl`
+- Python 3.12
+- [uv](https://docs.astral.sh/uv/) for the pinned Python environment
 - PostgreSQL
 
-### 1. Install dependencies
+### 1. Clone and install
 
 ```bash
 git clone https://github.com/vaibhav0xq/technocore-gauntlet.git
 cd technocore-gauntlet
 pnpm install --frozen-lockfile
+uv sync --frozen
 ```
 
-### 2. Initialize PostgreSQL
+`uv sync` creates `.venv` from the checked-in `uv.lock`, including the pinned
+PyNaCl and cryptography versions used by the Python adapters.
 
-Set a PostgreSQL connection string, then apply the checked-in Drizzle schema:
+### 2. Create the local database
+
+Create an empty PostgreSQL database, set its connection string and apply the
+checked-in Drizzle schema. Replace `USER` and `PASSWORD` for your installation:
 
 ```bash
-export DATABASE_URL='postgresql://postgres:postgres@localhost:5432/technocore_gauntlet'
+createdb technocore_gauntlet
+export DATABASE_URL='postgresql://USER:PASSWORD@localhost:5432/technocore_gauntlet'
 pnpm --filter @workspace/db run push
 ```
 
 ### 3. Start the API
 
+Activate the Python environment, then start the API in the same terminal:
+
 ```bash
-DATABASE_URL="$DATABASE_URL" \
-PORT=3000 \
-pnpm --filter @workspace/api-server run dev
+source .venv/bin/activate
+PORT=3000 pnpm --filter @workspace/api-server run dev
 ```
 
-Verify it:
+On Windows PowerShell, activate it with
+`.\.venv\Scripts\Activate.ps1` instead. Keep `DATABASE_URL` set in the terminal
+that starts the API.
+
+Check that the API and database are ready:
 
 ```bash
 curl http://localhost:3000/api/healthz
 ```
+
+The expected response is `{"status":"ok"}`.
 
 ### 4. Start the frontend
 
 In a second terminal:
 
 ```bash
-PORT=5173 \
-VITE_API_URL=http://localhost:3000 \
-pnpm --filter @workspace/technocore-gauntlet run dev
+PORT=5173 VITE_API_URL=http://localhost:3000 \
+  pnpm --filter @workspace/technocore-gauntlet run dev
 ```
 
-Open `http://localhost:5173`.
+Open <http://localhost:5173>. The browser talks only to your local API, and
+protocol runs remain confined to the three bundled adapters.
 
 ## Using the web application
 
@@ -531,44 +553,64 @@ pnpm --filter @workspace/scripts run gauntlet:self-test
 `result.xml` exports can be uploaded by any CI system that accepts JUnit XML.
 The CLI returns a non-zero exit code for failures, divergences and errors.
 
-## Deployment
+## Hosted deployment and self-hosting
 
-The production application is intentionally split:
+### Current live deployment
 
-- a static host such as GitHub Pages serves the React frontend;
-- Replit or another Node/Python host runs the API and pinned adapters;
-- PostgreSQL stores run evidence and replay provenance.
+The complete public application is hosted at:
 
-GitHub Pages cannot execute the Python adapters or host PostgreSQL.
+**<https://technocore-gauntlet.replit.app>**
 
-- Frontend: <https://vaibhav0xq.github.io/technocore-gauntlet/>
-- API: not currently hosted.
+The deployment serves the React workbench at `/`, the Express API at `/api` and
+uses PostgreSQL for run evidence and replay provenance. It includes the three
+built-in TypeScript and Python adapters, so standard runs, chaos runs, history,
+replay, import, export and local signature verification are available from the
+live interface.
 
-The published frontend is a static build. It cannot execute runs, list suites or
-persist evidence until an API origin is deployed and baked in as `VITE_API_URL`
-at build time. Until then, use the [quick start](#quick-start) to run the whole
-stack locally.
-
-### Build the frontend for GitHub Pages
+Two useful deployment checks:
 
 ```bash
-BASE_PATH=/technocore-gauntlet/ \
-VITE_API_URL=https://your-api-host.example.com \
+curl https://technocore-gauntlet.replit.app/api/healthz
+curl https://technocore-gauntlet.replit.app/api/suites
+```
+
+A frontend-only static host is not a complete Gauntlet deployment. It can render
+the interface, but it cannot execute adapters or persist evidence without the
+API and PostgreSQL.
+
+### Self-host the full stack
+
+Follow [Run locally](#run-locally) first to install dependencies and initialize
+PostgreSQL. For a production-style installation, build every package:
+
+```bash
+pnpm run build
+```
+
+Run the API from the activated Python environment:
+
+```bash
+source .venv/bin/activate
+DATABASE_URL='postgresql://USER:PASSWORD@localhost:5432/technocore_gauntlet' \
+NODE_ENV=production \
+PORT=3000 \
+CORS_ORIGINS=https://your-ui.example.com \
+node --enable-source-maps artifacts/api-server/dist/index.mjs
+```
+
+Build the frontend for its public origin:
+
+```bash
+BASE_PATH=/ \
+VITE_API_URL=https://your-api.example.com \
 NODE_ENV=production \
 pnpm --filter @workspace/technocore-gauntlet run build
-
-cp artifacts/observatory/dist/public/index.html \
-  artifacts/observatory/dist/public/404.html
 ```
 
-Publish `artifacts/observatory/dist/public` at the root of a `gh-pages` branch.
-The copied `404.html` preserves client-side routes on direct navigation.
-
-Set the API's production CORS allowlist to the frontend origin:
-
-```bash
-CORS_ORIGINS=https://vaibhav0xq.github.io
-```
+Serve `artifacts/observatory/dist/public` as a static site with an SPA fallback
+to `index.html`. If the frontend and API share one origin and the reverse proxy
+routes `/api` to Express, set `CORS_ORIGINS` to that shared public origin and
+omit `VITE_API_URL`; the frontend uses same-origin API requests by default.
 
 Relevant environment variables:
 
@@ -578,7 +620,7 @@ Relevant environment variables:
 | `PORT` | API and frontend dev server | Listening port |
 | `CORS_ORIGINS` | API | Comma-separated production origin allowlist |
 | `VITE_API_URL` | Frontend | Public HTTPS API origin embedded at build time |
-| `BASE_PATH` | Frontend | Static-host subpath, such as `/technocore-gauntlet/` |
+| `BASE_PATH` | Frontend | Public path prefix; use `/` at the domain root |
 | `LOG_LEVEL` | API | Optional structured logging level |
 
 ## Limitations
