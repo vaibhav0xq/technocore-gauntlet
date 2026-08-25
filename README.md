@@ -10,6 +10,8 @@ Technocore implementations.**
 ![Node](https://img.shields.io/badge/Node.js-24-339933.svg)
 ![Python](https://img.shields.io/badge/Python-3.12-3776ab.svg)
 
+**[Launch Technocore Gauntlet](https://vaibhav0xq.github.io/technocore-gauntlet/)**
+
 </div>
 
 Technocore Gauntlet runs the same source-cited protocol vectors against
@@ -422,11 +424,14 @@ The production application is intentionally split:
 
 GitHub Pages cannot execute the Python adapters or host PostgreSQL.
 
+- Frontend: <https://vaibhav0xq.github.io/technocore-gauntlet/>
+- API: <https://technocore-provenance-observatory.replit.app/api>
+
 ### Build the frontend for GitHub Pages
 
 ```bash
 BASE_PATH=/technocore-gauntlet/ \
-VITE_API_URL=https://your-api.example.com \
+VITE_API_URL=https://technocore-provenance-observatory.replit.app \
 NODE_ENV=production \
 pnpm --filter @workspace/technocore-gauntlet run build
 
