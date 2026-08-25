@@ -1,73 +1,432 @@
+<div align="center">
+
 # Technocore Gauntlet
 
-Technocore Gauntlet is a deterministic protocol-conformance and bounded
-chaos-testing lab for Technocore implementations. It runs the same source-cited
-vectors against independent adapters, preserves exact evidence, and makes
-compatibility differences visible instead of treating unsupported behavior as a
-pass.
+**A deterministic protocol-conformance and bounded chaos-testing lab for
+Technocore implementations.**
 
-## What it proves
+[![License: MIT](https://img.shields.io/badge/License-MIT-111827.svg)](LICENSE)
+![Protocol](https://img.shields.io/badge/Technocore-v0.9.1-5b5bd6.svg)
+![Node](https://img.shields.io/badge/Node.js-24-339933.svg)
+![Python](https://img.shields.io/badge/Python-3.12-3776ab.svg)
 
-- Cross-implementation evidence from a local TypeScript reference, the official
-  Python v0.9.1 verifier, and a pinned community Python implementation.
-- Deterministic replayable runs with explicit `passed`, `failed`, `incomplete`,
-  and `error` outcomes.
-- Per-case `pass`, `fail`, `unsupported`, and `error` evidence.
-- JSON and JUnit exports for local review and CI.
-- A real compatibility finding: the pinned community adapter accepts padded
-  base64url signatures while the TypeScript and official Python implementations
-  reject them.
-- Data-only external bundle import with independently derived outcomes.
+</div>
 
-Imported bundles are self-reported, unauthenticated evidence. They are not
-certification, endorsement, or proof that a named implementation produced the
-submitted data.
+Technocore Gauntlet runs the same source-cited protocol vectors against
+independent implementations, preserves the exact evidence produced by each
+adapter, and exposes compatibility differences that ordinary happy-path tests
+miss.
 
-## Hosted architecture
+It is a **local, deterministic test harness**. It does not fuzz public services,
+post messages, use accounts, or mutate `technocore.chat`.
 
-The public application is deliberately split:
+> [!IMPORTANT]
+> Gauntlet is an unofficial community conformance tool. A passing run is useful
+> engineering evidence, not certification, endorsement, or proof of affiliation
+> with Flop Labs or an adapter author.
 
-- GitHub Pages serves the static React frontend at
-  `https://vaibhav0xq.github.io/technocore-gauntlet/`.
-- Replit runs the allowlisted adapter API and PostgreSQL evidence store.
-- The Pages build receives only the public API origin. Database credentials and
-  executable adapter configuration never enter the browser or GitHub Actions.
+## Contents
 
-GitHub Pages cannot run the Python adapters or database by itself.
+- [What is Gauntlet?](#what-is-gauntlet)
+- [What it tests](#what-it-tests)
+- [Implementations](#implementations)
+- [Quick start](#quick-start)
+- [Using the web application](#using-the-web-application)
+- [Using the API](#using-the-api)
+- [Testing a local adapter](#testing-a-local-adapter)
+- [Evidence and outcomes](#evidence-and-outcomes)
+- [Deterministic chaos mode](#deterministic-chaos-mode)
+- [Architecture](#architecture)
+- [Security and trust boundary](#security-and-trust-boundary)
+- [Validation](#validation)
+- [Deployment](#deployment)
+- [Limitations](#limitations)
+- [License and attribution](#license-and-attribution)
 
-## Local development
+## What is Gauntlet?
 
-Requirements:
+A *gauntlet* is a sequence of demanding checks. Technocore Gauntlet applies
+that idea to protocol implementations:
+
+1. Build deterministic test vectors from the Technocore v0.9.1 source, tests,
+   and design documentation.
+2. Send identical inputs to multiple isolated adapters.
+3. Compare semantic outputs, canonical payloads, and support coverage.
+4. Persist every case with its implementation snapshot and source citation.
+5. Export replayable JSON evidence or JUnit XML for CI.
+
+Gauntlet deliberately keeps **unsupported**, **failed**, and **errored** cases
+separate. Missing behavior is never silently counted as a pass.
+
+### A real divergence found by the suite
+
+The `strict-signature-encoding` vector demonstrates why cross-implementation
+testing matters:
+
+- the TypeScript reference adapter rejects padded base64url signatures;
+- the official Python v0.9.1 oracle rejects them;
+- the pinned community adapter accepts them.
+
+That is recorded as a reproducible compatibility divergence with the same key,
+payload, and seed—not as a vague implementation score.
+
+## What it tests
+
+The `protocol-v0.9.1` suite contains 15 standard vectors:
+
+| Area | Representative checks |
+| --- | --- |
+| Ed25519 verification | Valid signature, tampered text, room, and nonce |
+| Signature encoding | Exactly 86 characters, unpadded base64url, 64 decoded bytes |
+| `did:key` handling | Valid Ed25519 key, malformed DID, malformed multibase, small-order key |
+| Canonical payload | `<room>\|<decimal nonce string>\|<swept text>` |
+| Unicode sweeping | `Cc`, `Cf`, `Cs`, `Co`, `Zl`, and `Zp` replacement and idempotence |
+| Nonce boundaries | Decimal strings from 1 to 19 digits; numbers and 20-digit values are invalid |
+| Replay behavior | The same signed message is accepted once and rejected on replay |
+
+Every vector includes its category, severity, expected output, and source
+citation. See the [source investigation](research/technocore-investigation.md)
+for the derivation and compatibility notes.
+
+## Implementations
+
+| Implementation | Language | Role | Modes | Source/license |
+| --- | --- | --- | --- | --- |
+| Local TypeScript reference adapter | TypeScript | Source-derived reference | Standard and chaos | Project / MIT |
+| Official Python v0.9.1 protocol oracle | Python | Vendored protocol-only official extract | Standard | Apache-2.0 |
+| `zunmax` DID starter, pinned at `3cc03a6` | Python | Vendored community implementation | Standard | MIT |
+
+The Python adapters are pinned, protocol-only extracts. Network and posting
+workflows are not included.
+
+## Quick start
+
+### Requirements
 
 - Node.js 24
 - pnpm 10
-- Python 3.12
+- Python 3.12 with `PyNaCl`
 - PostgreSQL
 
-Install and validate:
+### 1. Install dependencies
+
+```bash
+git clone https://github.com/vaibhav0xq/technocore-gauntlet.git
+cd technocore-gauntlet
+pnpm install --frozen-lockfile
+```
+
+### 2. Initialize PostgreSQL
+
+Set a PostgreSQL connection string, then apply the checked-in Drizzle schema:
+
+```bash
+export DATABASE_URL='postgresql://postgres:postgres@localhost:5432/technocore_gauntlet'
+pnpm --filter @workspace/db run push
+```
+
+### 3. Start the API
+
+```bash
+DATABASE_URL="$DATABASE_URL" \
+PORT=3000 \
+pnpm --filter @workspace/api-server run dev
+```
+
+Verify it:
+
+```bash
+curl http://localhost:3000/api/healthz
+```
+
+### 4. Start the frontend
+
+In a second terminal:
+
+```bash
+PORT=5173 \
+VITE_API_URL=http://localhost:3000 \
+pnpm --filter @workspace/technocore-gauntlet run dev
+```
+
+Open `http://localhost:5173`.
+
+## Using the web application
+
+### Run a conformance comparison
+
+1. Open **Workbench**.
+2. Select one or more built-in implementations.
+3. Choose **Standard** mode and provide a seed.
+4. Run the suite.
+5. Inspect the per-vector implementation matrix, canonical values, diagnostics,
+   source citations, and detected divergences.
+
+The seed controls deterministic key and case generation. Reusing the same seed,
+suite, mode, implementation set, and chaos configuration reproduces the same
+protocol inputs.
+
+### Explore and verify
+
+- **Vector Catalog** documents every case and expected behavior.
+- **Verify** checks an individual DID, room, nonce, text, and signature locally.
+- **Run History** lists persisted runs and their coverage/status.
+- **Run Detail** shows exact case evidence and comparison summaries.
+- **Replay** reruns a hosted result using its original deterministic inputs.
+- **Export JSON** downloads a canonical evidence bundle.
+- **Export JUnit** creates CI-compatible test output.
+- **Import Bundle** validates and stores self-reported local-adapter evidence.
+
+Imported evidence cannot be replayed by the hosted runner.
+
+## Using the API
+
+The HTTP API is mounted at `/api`.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/healthz` | Health check |
+| `GET` | `/api/protocol` | Canonical protocol rules and safety boundary |
+| `GET` | `/api/suites` | Available suites |
+| `GET` | `/api/vectors` | Standard vector catalog |
+| `GET` | `/api/implementations` | Built-in implementation metadata |
+| `POST` | `/api/runs` | Execute and persist a run |
+| `GET` | `/api/runs` | List persisted runs |
+| `GET` | `/api/runs/:id` | Retrieve complete run evidence |
+| `POST` | `/api/runs/:id/replay` | Replay a hosted run |
+| `GET` | `/api/runs/:id/export?format=json` | Export a canonical JSON bundle |
+| `GET` | `/api/runs/:id/export?format=junit` | Export JUnit XML |
+| `POST` | `/api/bundles/import` | Validate and persist external evidence |
+| `POST` | `/api/verify` | Verify one signed message |
+
+Example three-way standard run:
+
+```bash
+curl http://localhost:3000/api/runs \
+  --request POST \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "suiteId": "protocol-v0.9.1",
+    "seed": "readme-demo",
+    "mode": "standard",
+    "implementationIds": [
+      "technocore-ts-reference-local",
+      "technocore-python-official-0.9.1",
+      "zunmax-did-starter-3cc03a6"
+    ]
+  }'
+```
+
+Request and response schemas are defined in
+[`lib/api-spec/openapi.yaml`](lib/api-spec/openapi.yaml). Generated Zod schemas
+validate the server boundary, and the React client is generated from the same
+contract.
+
+## Testing a local adapter
+
+Arbitrary implementations are intentionally **CLI-only**. The hosted API never
+accepts executable paths, source code, repositories, commands, or uploads.
+
+### 1. Export a standard run
+
+Run the standard suite in the web application and export its JSON bundle as
+`run.json`. The CLI uses that bundle as the server-owned vector template.
+
+### 2. Implement the JSONL contract
+
+Your executable must read one JSON object per line from standard input:
+
+```json
+{"contract":"technocore-gauntlet-adapter/v1","implementationId":"my-rust-adapter","vectorId":"valid-ed25519","input":{"did":"did:key:...","room":"gauntlet","nonce":"9007199254740993001","text":"hello","signature":"..."},"expected":{"valid":true}}
+```
+
+It must return exactly one line for each request, in the same order:
+
+```json
+{"vectorId":"valid-ed25519","status":"pass","actual":{"valid":true}}
+```
+
+Allowed statuses:
+
+- `pass` or `fail`: `actual` must contain the implementation's real result.
+  Gauntlet derives pass/fail independently and rejects dishonest claims.
+- `unsupported`: `actual` must be `{"unsupported":true}`.
+- `error`: `actual` must be `null`.
+
+An optional `message` may contain 1–500 characters.
+
+### 3. Run the adapter
+
+```bash
+pnpm --filter @workspace/scripts gauntlet -- \
+  --input run.json \
+  --adapter /absolute/path/to/your-adapter \
+  --implementation-id my-rust-adapter \
+  --name "My Rust adapter" \
+  --language Rust \
+  --version 1.2.3 \
+  --license MIT \
+  --revision abc123 \
+  --json result.json \
+  --junit result.xml
+```
+
+All six attribution fields are required. Built-in implementation IDs are
+reserved.
+
+The executable is launched directly with `shell:false`, no arguments, a
+five-second timeout, and bounded input/output. External adapters support
+standard mode only.
+
+CLI exit codes:
+
+| Code | Meaning |
+| --- | --- |
+| `0` | No conformance failure, divergence, or adapter error |
+| `1` | Failed case, divergence, or adapter error |
+| `2` | Invalid input, contract violation, or execution failure |
+
+See the complete [adapter contract](docs/adapter-contract.md) before integrating
+a new implementation.
+
+## Evidence and outcomes
+
+### Case outcomes
+
+| Outcome | Meaning |
+| --- | --- |
+| `pass` | Actual output matches the vector's expected result |
+| `fail` | The adapter completed but produced a non-conforming result |
+| `unsupported` | The adapter explicitly does not implement this behavior |
+| `error` | The adapter could not produce a valid bounded result |
+
+### Run outcomes
+
+| Outcome | Meaning |
+| --- | --- |
+| `passed` | Every selected implementation passed every case |
+| `failed` | At least one conformance failure or true cross-implementation divergence |
+| `incomplete` | No failure, but at least one case was unsupported |
+| `error` | At least one adapter or case errored |
+
+Precedence is `error` → `failed` → `incomplete` → `passed`.
+
+Canonical JSON bundles use `technocore-gauntlet-bundle/v1` and include:
+
+- suite, seed, mode, and chaos configuration;
+- immutable implementation metadata snapshots;
+- exact input, expected value, actual value, canonical bytes, and evidence;
+- counts, coverage, agreement, and divergence summaries;
+- source citations and provenance;
+- a SHA-256 digest over stable, key-sorted JSON.
+
+Imports are data-only and strictly bounded. Gauntlet rejects unknown contracts,
+unexpected vectors, duplicate cases, digest/count mismatches, executable-like
+fields, oversized bundles, reserved built-in identities, and dishonest outcome
+claims.
+
+## Deterministic chaos mode
+
+Chaos mode is bounded mutation testing for the TypeScript reference path—not
+network load testing.
+
+Available controls:
+
+- zero-width Unicode insertion;
+- truncation;
+- character duplication;
+- adjacent-character reordering;
+- nonce boundary generation;
+- deterministic latency/jitter **evidence**.
+
+Latency is recorded without sleeping. The suite performs no DNS, HTTP, sockets,
+remote targeting, or public writes. A run is capped at 100 total cases.
+
+## Architecture
+
+```text
+React + Vite frontend
+        │
+        │ generated OpenAPI client
+        ▼
+Express API ───────── PostgreSQL evidence store
+    │
+    ├── TypeScript reference adapter
+    ├── official Python v0.9.1 oracle
+    └── pinned community Python adapter
+
+Local CLI ── arbitrary operator-owned JSONL adapter
+```
+
+Repository layout:
+
+```text
+artifacts/observatory/   React workbench and evidence UI
+artifacts/api-server/    Express API, runner, validation, persistence
+lib/api-spec/            OpenAPI source and code-generation configuration
+lib/api-zod/             Generated server-side schemas
+lib/api-client-react/    Generated React Query client
+lib/db/                  Drizzle PostgreSQL schema
+scripts/                 Local adapter CLI and self-test
+vendor/                  Pinned protocol-only Python adapters
+docs/                    Adapter contract
+research/                Source investigation and divergence evidence
+```
+
+## Security and trust boundary
+
+Hosted execution is restricted to the three statically allowlisted adapter IDs.
+The API does not accept:
+
+- commands or command arguments;
+- executable paths or environment maps;
+- repositories, URLs, or source code;
+- executable uploads;
+- arbitrary implementation metadata.
+
+Python adapters run through a fixed worker and fixed `python3` executable with
+`shell:false`, a five-second timeout, 64 KiB stdin, and 128 KiB stdout. Adapter
+failures become bounded, non-sensitive case evidence.
+
+The local CLI is the only arbitrary-executable escape hatch. It runs on the
+operator's machine, remains bounded, recomputes outcomes and digests, and marks
+the result as self-reported external evidence.
+
+## Validation
+
+Run the complete static/build validation:
 
 ```bash
 pnpm install --frozen-lockfile
 pnpm run typecheck
+pnpm run build
+```
+
+Run the protocol-specific self-tests:
+
+```bash
 pnpm --filter @workspace/api-server run self-test
 pnpm --filter @workspace/scripts run gauntlet:self-test
 ```
 
-Set `DATABASE_URL`, then run the API and frontend in separate terminals:
+`result.xml` exports can be uploaded by any CI system that accepts JUnit XML.
+The CLI returns a non-zero exit code for failures, divergences, and errors.
 
-```bash
-pnpm run dev:api
-pnpm run dev:web
-```
+## Deployment
 
-## GitHub Pages deployment
+The production application is intentionally split:
 
-GitHub Pages is published from the generated `gh-pages` branch. Build only the
-Observatory frontend with the public HTTPS origin of the published Replit API:
+- a static host such as GitHub Pages serves the React frontend;
+- Replit or another Node/Python host runs the API and pinned adapters;
+- PostgreSQL stores run evidence and replay provenance.
+
+GitHub Pages cannot execute the Python adapters or host PostgreSQL.
+
+### Build the frontend for GitHub Pages
 
 ```bash
 BASE_PATH=/technocore-gauntlet/ \
-VITE_API_URL=https://your-api.replit.app \
+VITE_API_URL=https://your-api.example.com \
 NODE_ENV=production \
 pnpm --filter @workspace/technocore-gauntlet run build
 
@@ -75,31 +434,49 @@ cp artifacts/observatory/dist/public/index.html \
   artifacts/observatory/dist/public/404.html
 ```
 
-Publish the contents of `artifacts/observatory/dist/public` at the root of the
-`gh-pages` branch, then configure repository Pages settings to deploy from that
-branch. The copied `404.html` is the SPA fallback that keeps bookmarked routes
-working.
+Publish `artifacts/observatory/dist/public` at the root of a `gh-pages` branch.
+The copied `404.html` preserves client-side routes on direct navigation.
 
-The API production allowlist is configured with `CORS_ORIGINS`. For this Pages
-site it must include:
+Set the API's production CORS allowlist to the frontend origin:
 
-```text
-https://vaibhav0xq.github.io
+```bash
+CORS_ORIGINS=https://vaibhav0xq.github.io
 ```
 
-## Trust boundary
+Relevant environment variables:
 
-Hosted execution is limited to statically allowlisted adapters. The hosted API
-does not accept commands, executable paths, repositories, URLs, source code,
-environment maps, or executable uploads. Arbitrary adapters are local CLI-only
-and are launched without a shell under bounded execution.
+| Variable | Service | Purpose |
+| --- | --- | --- |
+| `DATABASE_URL` | API / database tools | PostgreSQL connection string |
+| `PORT` | API and frontend dev server | Listening port |
+| `CORS_ORIGINS` | API | Comma-separated production origin allowlist |
+| `VITE_API_URL` | Frontend | Public HTTPS API origin embedded at build time |
+| `BASE_PATH` | Frontend | Static-host subpath, such as `/technocore-gauntlet/` |
+| `LOG_LEVEL` | API | Optional structured logging level |
 
-See [the adapter contract](docs/adapter-contract.md) and
-[the source investigation](research/technocore-investigation.md) for the full
-evidence and attribution model.
+## Limitations
 
-## License
+- Gauntlet covers the pure signed-message protocol seams represented by the
+  v0.9.1 source and tests; it is not a complete platform certification suite.
+- Hosted adapters are pinned snapshots and do not automatically track upstream
+  releases.
+- Chaos mode is currently TypeScript-reference-only.
+- External bundle evidence is self-reported and unauthenticated. Structural
+  validation proves consistency, not who executed the adapter.
+- No live-service smoke test is implemented.
+- The suite intentionally performs no network fuzzing, load testing, posting,
+  or account actions.
 
-The original Gauntlet code is available under the [MIT License](LICENSE).
-Vendored adapters retain their upstream Apache-2.0 and MIT licenses and NOTICE
-files under `vendor/technocore-adapters/`.
+## License and attribution
+
+Original Gauntlet code is available under the [MIT License](LICENSE).
+
+Vendored components retain their upstream licenses and notices:
+
+- official Technocore v0.9.1 protocol extract: Apache-2.0;
+- pinned `zunmax` DID starter protocol extract: MIT.
+
+Their license and NOTICE files are preserved under
+[`vendor/technocore-adapters/`](vendor/technocore-adapters/). Gauntlet,
+its packaging, and its results are unofficial and do not imply certification or
+endorsement.
