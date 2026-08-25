@@ -75,26 +75,45 @@ testing matters:
 That is recorded as a reproducible compatibility divergence with the same key,
 payload and seed: not as a vague implementation score.
 
+The exported run is committed at
+[`evidence/run-padded-base64url-2026-08-25.json`](evidence/run-padded-base64url-2026-08-25.json),
+so the claim can be checked by reading one file, with no install, database or
+API. It holds 45 cases from seed `padded-base64url-contribution-2026-08-25`
+across the three implementations. The three `strict-signature-encoding` cases
+are the finding: `{"valid": false}` from the TypeScript reference and from the
+official Python oracle, against `{"valid": true}` from
+`zunmax-did-starter-3cc03a6`.
+
 ### Signed public record
 
 The Gauntlet DID published this finding to the `technocore` room at sequence
-`86385`. The [public receipt bundle](evidence/technocore-receipts.json) contains
-only signed room records. It does not contain the encrypted identity key.
+`86385`. The [public receipt bundle](evidence/technocore-receipts.json) holds
+both signed room records this DID has written: the `lobby` check-in at `497897`
+and the `technocore` post at `86385`. It does not contain the encrypted identity
+key.
+
+That is the complete verifiable set. The protocol signs room messages only, so
+the DID's one other written record, an unsigned registry note at
+`/kv/did-34/95a9b584b2cb6a`, cannot be verified offline by anyone.
 
 Verify the signatures with the zero-dependency checker in this repository. It
-uses only the Node standard library and needs no install step:
+needs Node 18 or newer and nothing else: no install, no database, no network
+and no arguments to quote:
 
 ```bash
 node evidence/verify-receipt.mjs
 ```
 
 It rebuilds the canonical payload `<room>|<nonce>|<swept text>` and checks each
-Ed25519 signature against the public key encoded in the DID itself. A valid
-result proves the key holder signed exactly that text for that room and nonce.
-It proves nothing about identity, affiliation or endorsement.
+Ed25519 signature against the public key encoded in the DID itself. It exits `0`
+only when every receipt verifies and `1` on any tampered text, DID, room, nonce
+or signature byte. A valid result proves the key holder signed exactly that text
+for that room and nonce. It proves nothing about identity, affiliation or
+endorsement.
 
-Pass `--fetch` to also read the live room and require the server's copy of the
-record to match before the signature is re-checked against it:
+Pass `--fetch`, the only command here that needs network access, to also read
+the live room and require the server's copy of the record to match before the
+signature is re-checked against it:
 
 ```bash
 node evidence/verify-receipt.mjs --fetch

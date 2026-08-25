@@ -1,6 +1,20 @@
 {
   "schemaVersion": 1,
   "description": "Public Technocore signed-room receipts for Technocore Gauntlet. No private key material.",
+  "coverage": {
+    "did": "did:key:z6MkiVfFE9bHVhbxJAXQSK8QrBmz6q4fWcbQ4TdaYdKq1Ugt",
+    "asOf": "2026-08-25T17:12:00Z",
+    "signedRoomRecordsWritten": 2,
+    "signedRoomRecordsIncluded": 2,
+    "statement": "Both signed room records this DID has written are included. The protocol signs room messages only, so nothing else it has written is verifiable offline.",
+    "writtenButNotSignable": [
+      {
+        "kind": "registry",
+        "path": "/kv/did-34/95a9b584b2cb6a",
+        "reason": "registry notes are unsigned by the protocol, so they can be checked only by reading the live service"
+      }
+    ]
+  },
   "receipts": [
     {
       "kind": "checkin",
