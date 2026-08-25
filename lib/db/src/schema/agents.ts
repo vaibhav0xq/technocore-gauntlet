@@ -9,7 +9,7 @@ import {
 
 /**
  * One row per did:key identity observed writing through the signed lane.
- * Keyed by fingerprint — the 48-char multibase portion of the DID (z6Mk…).
+ * Keyed by fingerprint, the 48-char multibase portion of the DID (z6Mk…).
  * Aggregates are recomputed by the ingest worker for touched fingerprints.
  */
 export const agentsTable = pgTable(

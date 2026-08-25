@@ -144,7 +144,7 @@ export function Workbench() {
               Execution Parameters
             </CardTitle>
             <CardDescription className="font-mono text-xs">
-              Configure suite, targets, and entropy source
+              Configure suite, targets and entropy source
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">

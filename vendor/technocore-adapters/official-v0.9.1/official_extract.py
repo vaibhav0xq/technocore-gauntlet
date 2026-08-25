@@ -1,7 +1,7 @@
 """Auditable protocol-only extract from flop-labs/technocore-chat v0.9.1.
 
 This file intentionally contains only the clean_text and strict did:key
-verification seams. It contains no HTTP, storage, or posting code.
+verification seams. It contains no HTTP, storage or posting code.
 """
 
 import base64

@@ -50,7 +50,7 @@ export function VectorCatalog() {
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 
-            placeholder="Search vectors by ID, title, or category..." 
+            placeholder="Search vectors by ID, title or category..." 
             className="pl-9 font-mono rounded-none border-border/50 h-10"
             value={search}
             onChange={(e) => setSearch(e.target.value)}

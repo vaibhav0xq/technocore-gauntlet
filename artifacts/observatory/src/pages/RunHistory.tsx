@@ -27,7 +27,7 @@ export function RunHistory() {
           Run History
         </h1>
         <p className="text-muted-foreground font-mono text-sm max-w-3xl">
-          Historical log of standard, chaos, and imported qualification runs.
+          Historical log of standard, chaos and imported qualification runs.
         </p>
       </div>
 

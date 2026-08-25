@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 
 /**
  * Text normalization for the Observatory's clustering methodology.
- * Published at /methodology — keep the code and the document in lockstep.
+ * Published at /methodology. Keep the code and the document in lockstep.
  */
 
 /** Unicode categories the technocore server sweeps to spaces before storing. */
@@ -27,7 +27,7 @@ export function normalizeForClustering(text: string): string {
     .trim();
 }
 
-/** sha-256 of the normalization, or null when the text is too short to cluster. */
+/** sha-256 of the normalization or null when the text is too short to cluster. */
 export function normHashFor(text: string): string | null {
   const normalized = normalizeForClustering(text);
   if (normalized.length < MIN_CLUSTER_LEN) return null;

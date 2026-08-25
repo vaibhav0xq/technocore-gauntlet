@@ -302,7 +302,7 @@ export function RunDetail() {
                         </div>
                         <div className="mt-1 text-muted-foreground">
                           Gauntlet verified the bundle structure, canonical
-                          vectors, derived outcomes, and transport digest. It
+                          vectors, derived outcomes and transport digest. It
                           did not authenticate who ran the external
                           implementation.
                         </div>

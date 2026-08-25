@@ -49,7 +49,7 @@ export function Verify() {
           <h1 className="text-3xl font-black tracking-tight font-sans uppercase">Signature Inspector</h1>
         </div>
         <p className="text-muted-foreground font-mono text-sm max-w-3xl">
-          Manual diagnostic tool for protocol message verification. Evaluates canonicalization, signature schemes, and validation rules.
+          Manual diagnostic tool for protocol message verification. Evaluates canonicalization, signature schemes and validation rules.
         </p>
       </div>
 

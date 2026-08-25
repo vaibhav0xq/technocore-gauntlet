@@ -2,7 +2,7 @@ import type { GauntletRun } from "./gauntlet";
 
 /**
  * PostgreSQL JSONB/text cannot represent U+0000 or malformed UTF-16. Runs are
- * canonicalized before they are returned, digested, or persisted so every
+ * canonicalized before they are returned, digested or persisted so every
  * API/storage/export surface observes the same explicit escaped evidence.
  */
 export function databaseSafeValue(value: unknown): unknown {

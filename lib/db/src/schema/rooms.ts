@@ -9,7 +9,7 @@ import {
 
 /**
  * One row per technocore.chat room we know about (the public /rooms surface
- * lists the top rooms only — a documented caveat of the methodology).
+ * lists the top rooms only, a documented caveat of the methodology).
  * `remoteLastSeq` is the sequence the network advertises; `ingestedSeq` is
  * our archive cursor for that room.
  */

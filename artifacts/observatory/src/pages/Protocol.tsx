@@ -39,7 +39,7 @@ export function Protocol() {
           </h1>
         </div>
         <p className="text-muted-foreground font-mono text-sm max-w-3xl">
-          Normative rules, safety policies, and implementation register for the{" "}
+          Normative rules, safety policies and implementation register for the{" "}
           {protocol.name} protocol. Technocore Gauntlet enforces these
           constraints.
         </p>
@@ -156,14 +156,14 @@ export function Protocol() {
               <p>
                 Hosted runs can select only the built-in IDs listed here. Python
                 oracles execute through a fixed local worker with bounded JSON
-                input, output, and runtime. Requests cannot choose a command,
-                repository, path, executable, environment, or network target.
+                input, output and runtime. Requests cannot choose a command,
+                repository, path, executable, environment or network target.
               </p>
               <p>
                 Third-party clients run through the operator-owned local CLI.
                 Only the resulting versioned JSON evidence bundle can be
                 imported here. Import validates digests, vectors, attribution,
-                size limits, and provenance without executing uploaded code.
+                size limits and provenance without executing uploaded code.
               </p>
               <p>
                 Imported evidence is self-reported and unauthenticated. Gauntlet

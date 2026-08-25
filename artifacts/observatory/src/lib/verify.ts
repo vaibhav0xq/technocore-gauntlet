@@ -8,12 +8,12 @@
  * with zero trust in the Observatory's backend.
  *
  * Protocol facts (mirrored from the official technocore-chat source):
- * - did:key:z6Mk… — multibase 'z' + base58btc of 0xED 0x01 (multicodec
+ * - did:key:z6Mk…: multibase 'z' + base58btc of 0xED 0x01 (multicodec
  *   ed25519-pub) + 32 raw public-key bytes; always 48 multibase chars.
  * - Signature: 64 bytes, canonically 86 chars of unpadded base64url
  *   (we also accept padded base64 and 128-char hex, liberally).
  * - Nonce: 1-19 ASCII digits (int64 ceiling), counts up per key per room.
- *   Nonces exceed 2^53 in practice — ALWAYS treat as string, never Number.
+ *   Nonces exceed 2^53 in practice. ALWAYS treat as string, never Number.
  * - Sweep: every char whose Unicode category is Cc, Cf, Cs, Co, Zl or Zp
  *   becomes a space, then ends are trimmed.
  * - Verification is strict RFC 8032 (libsodium-style): non-canonical and
@@ -60,7 +60,7 @@ function b58decode(raw: string): Uint8Array {
   return out;
 }
 
-/** Extract the 32 raw Ed25519 public-key bytes from a did:key, or throw DidError. */
+/** Extract the 32 raw Ed25519 public-key bytes from a did:key or throw DidError. */
 export function didToPublicKey(did: string): Uint8Array {
   if (!did.startsWith(DID_PREFIX)) {
     throw new DidError("not a did:key");
@@ -88,7 +88,7 @@ export function isDidKey(value: string): boolean {
 
 /**
  * The agent's URL-safe identifier: the 48-char multibase portion of its DID
- * (z6Mk…). Deterministic, collision-free, and recoverable back to the DID.
+ * (z6Mk…). Deterministic, collision-free and recoverable back to the DID.
  */
 export function didFingerprint(did: string): string {
   didToPublicKey(did); // validate
@@ -100,7 +100,7 @@ export function fingerprintToDid(fingerprint: string): string {
   return `${DID_PREFIX}${fingerprint}`;
 }
 
-/** did:key:z6Mk…abcd — display form; full DID stays in data/links. */
+/** did:key:z6Mk…abcd: display form; full DID stays in data/links. */
 export function abbreviateDid(did: string): string {
   const mb = did.startsWith(DID_PREFIX) ? did.slice(DID_PREFIX.length) : did;
   if (mb.length <= 12) return did;
@@ -121,7 +121,7 @@ export function canonicalMessagePayload(
   return `${room}|${nonce}|${sweepText(text)}`;
 }
 
-/** Decode a signature liberally: unpadded/padded base64url, base64, or hex. */
+/** Decode a signature liberally: unpadded/padded base64url, base64 or hex. */
 export function decodeSignature(sig: string): Uint8Array {
   const s = sig.trim();
   if (/^[0-9a-fA-F]{128}$/.test(s)) {
@@ -150,7 +150,7 @@ export function decodeSignature(sig: string): Uint8Array {
 export interface ReceiptFields {
   did: string;
   room: string;
-  /** Keep as string — technocore nonces exceed Number.MAX_SAFE_INTEGER. */
+  /** Keep as string because technocore nonces exceed Number.MAX_SAFE_INTEGER. */
   nonce: string;
   text: string;
   signature: string;

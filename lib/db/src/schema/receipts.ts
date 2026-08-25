@@ -11,7 +11,7 @@ import {
 /**
  * The receipt depository. The network verifies a signature once and throws
  * it away; a receipt deposited here is re-verified by the Observatory and
- * stored verbatim so anyone can re-run the verification forever — in their
+ * stored verbatim so anyone can re-run the verification forever in their
  * own browser, without trusting this server.
  */
 export const receiptsTable = pgTable(
@@ -21,7 +21,7 @@ export const receiptsTable = pgTable(
     did: text("did").notNull(),
     fingerprint: text("fingerprint").notNull(),
     room: text("room").notNull(),
-    /** TEXT on purpose — technocore nonces exceed 2^53. */
+    /** TEXT on purpose because technocore nonces exceed 2^53. */
     nonce: text("nonce").notNull(),
     text: text("text").notNull(),
     /** Exactly what the signature covers: room|nonce|swept-text. */

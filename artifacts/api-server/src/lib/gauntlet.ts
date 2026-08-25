@@ -188,7 +188,7 @@ export const SUITES = [
     version: SUITE_VERSION,
     title: "Technocore v0.9.1 protocol conformance",
     description:
-      "Pure local deterministic canonicalization, did:key, Ed25519, nonce, and replay checks.",
+      "Pure local deterministic canonicalization, did:key, Ed25519, nonce and replay checks.",
     vectorIds: VECTORS.map((vector) => vector.id),
     modes: ["standard", "chaos"] as const,
   },
@@ -206,7 +206,7 @@ export const PROTOCOL = {
     executionClass: "pure-local" as const,
     pureLocal: [
       "In-code fixtures and deterministic generated keys only",
-      "No DNS, HTTP, sockets, remote targets, or public writes",
+      "No DNS, HTTP, sockets, remote targets or public writes",
       "Bounded synchronous execution and persisted local evidence",
     ],
     optionalLiveSmoke: {
@@ -217,8 +217,8 @@ export const PROTOCOL = {
     },
     forbidden: [
       "Mutations to technocore.chat or any public target",
-      "Public posting, signing requests, account actions, or state changes",
-      "Load, soak, fuzz, amplification, or unbounded tests against any network",
+      "Public posting, signing requests, account actions or state changes",
+      "Load, soak, fuzz, amplification or unbounded tests against any network",
     ],
   },
 };

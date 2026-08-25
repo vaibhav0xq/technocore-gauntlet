@@ -248,7 +248,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Run"
         "400":
-          description: Invalid, dishonest, built-in, replayed, or unsafe bundle
+          description: Invalid, dishonest, built-in, replayed or unsafe bundle
           content:
             application/json:
               schema:

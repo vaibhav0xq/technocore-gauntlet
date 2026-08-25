@@ -84,7 +84,7 @@ export function ChaosMode() {
           <h1 className="text-3xl font-black tracking-tight font-sans uppercase">Bounded Chaos Lab</h1>
         </div>
         <p className="text-muted-foreground font-mono text-sm max-w-3xl">
-          Introduce deliberate mutations, latency, and boundary violations to verify protocol resilience. 
+          Introduce deliberate mutations, latency and boundary violations to verify protocol resilience. 
           All perturbations are deterministic based on the provided seed.
         </p>
       </div>

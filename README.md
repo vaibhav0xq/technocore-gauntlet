@@ -14,15 +14,15 @@ Technocore implementations.**
 
 Technocore Gauntlet runs the same source-cited protocol vectors against
 independent implementations, preserves the exact evidence produced by each
-adapter, and exposes compatibility differences that ordinary happy-path tests
+adapter and exposes compatibility differences that ordinary happy-path tests
 miss.
 
 It is a **local, deterministic test harness**. It does not fuzz public services,
-post messages, use accounts, or mutate `technocore.chat`.
+post messages, use accounts or mutate `technocore.chat`.
 
 > [!IMPORTANT]
 > Gauntlet is an unofficial community conformance tool. A passing run is useful
-> engineering evidence, not certification, endorsement, or proof of affiliation
+> engineering evidence, not certification, endorsement or proof of affiliation
 > with Flop Labs or an adapter author.
 
 ## Contents
@@ -51,11 +51,11 @@ that idea to protocol implementations:
 1. Build deterministic test vectors from the Technocore v0.9.1 source, tests,
    and design documentation.
 2. Send identical inputs to multiple isolated adapters.
-3. Compare semantic outputs, canonical payloads, and support coverage.
+3. Compare semantic outputs, canonical payloads and support coverage.
 4. Persist every case with its implementation snapshot and source citation.
 5. Export replayable JSON evidence or JUnit XML for CI.
 
-Gauntlet deliberately keeps **unsupported**, **failed**, and **errored** cases
+Gauntlet deliberately keeps **unsupported**, **failed** and **errored** cases
 separate. Missing behavior is never silently counted as a pass.
 
 ### A real divergence found by the suite
@@ -68,7 +68,7 @@ testing matters:
 - the pinned community adapter accepts them.
 
 That is recorded as a reproducible compatibility divergence with the same key,
-payload, and seed—not as a vague implementation score.
+payload and seed: not as a vague implementation score.
 
 ## What it tests
 
@@ -76,15 +76,15 @@ The `protocol-v0.9.1` suite contains 15 standard vectors:
 
 | Area | Representative checks |
 | --- | --- |
-| Ed25519 verification | Valid signature, tampered text, room, and nonce |
+| Ed25519 verification | Valid signature, tampered text, room and nonce |
 | Signature encoding | Exactly 86 characters, unpadded base64url, 64 decoded bytes |
 | `did:key` handling | Valid Ed25519 key, malformed DID, malformed multibase, small-order key |
 | Canonical payload | `<room>\|<decimal nonce string>\|<swept text>` |
-| Unicode sweeping | `Cc`, `Cf`, `Cs`, `Co`, `Zl`, and `Zp` replacement and idempotence |
+| Unicode sweeping | `Cc`, `Cf`, `Cs`, `Co`, `Zl` and `Zp` replacement and idempotence |
 | Nonce boundaries | Decimal strings from 1 to 19 digits; numbers and 20-digit values are invalid |
 | Replay behavior | The same signed message is accepted once and rejected on replay |
 
-Every vector includes its category, severity, expected output, and source
+Every vector includes its category, severity, expected output and source
 citation. See the [source investigation](research/technocore-investigation.md)
 for the derivation and compatibility notes.
 
@@ -160,16 +160,16 @@ Open `http://localhost:5173`.
 3. Choose **Standard** mode and provide a seed.
 4. Run the suite.
 5. Inspect the per-vector implementation matrix, canonical values, diagnostics,
-   source citations, and detected divergences.
+   source citations and detected divergences.
 
 The seed controls deterministic key and case generation. Reusing the same seed,
-suite, mode, implementation set, and chaos configuration reproduces the same
+suite, mode, implementation set and chaos configuration reproduces the same
 protocol inputs.
 
 ### Explore and verify
 
 - **Vector Catalog** documents every case and expected behavior.
-- **Verify** checks an individual DID, room, nonce, text, and signature locally.
+- **Verify** checks an individual DID, room, nonce, text and signature locally.
 - **Run History** lists persisted runs and their coverage/status.
 - **Run Detail** shows exact case evidence and comparison summaries.
 - **Replay** reruns a hosted result using its original deterministic inputs.
@@ -219,13 +219,13 @@ curl http://localhost:3000/api/runs \
 
 Request and response schemas are defined in
 [`lib/api-spec/openapi.yaml`](lib/api-spec/openapi.yaml). Generated Zod schemas
-validate the server boundary, and the React client is generated from the same
+validate the server boundary and the React client is generated from the same
 contract.
 
 ## Testing a local adapter
 
 Arbitrary implementations are intentionally **CLI-only**. The hosted API never
-accepts executable paths, source code, repositories, commands, or uploads.
+accepts executable paths, source code, repositories, commands or uploads.
 
 ### 1. Export a standard run
 
@@ -275,16 +275,16 @@ All six attribution fields are required. Built-in implementation IDs are
 reserved.
 
 The executable is launched directly with `shell:false`, no arguments, a
-five-second timeout, and bounded input/output. External adapters support
+five-second timeout and bounded input/output. External adapters support
 standard mode only.
 
 CLI exit codes:
 
 | Code | Meaning |
 | --- | --- |
-| `0` | No conformance failure, divergence, or adapter error |
-| `1` | Failed case, divergence, or adapter error |
-| `2` | Invalid input, contract violation, or execution failure |
+| `0` | No conformance failure, divergence or adapter error |
+| `1` | Failed case, divergence or adapter error |
+| `2` | Invalid input, contract violation or execution failure |
 
 See the complete [adapter contract](docs/adapter-contract.md) before integrating
 a new implementation.
@@ -313,21 +313,21 @@ Precedence is `error` → `failed` → `incomplete` → `passed`.
 
 Canonical JSON bundles use `technocore-gauntlet-bundle/v1` and include:
 
-- suite, seed, mode, and chaos configuration;
+- suite, seed, mode and chaos configuration;
 - immutable implementation metadata snapshots;
-- exact input, expected value, actual value, canonical bytes, and evidence;
-- counts, coverage, agreement, and divergence summaries;
+- exact input, expected value, actual value, canonical bytes and evidence;
+- counts, coverage, agreement and divergence summaries;
 - source citations and provenance;
 - a SHA-256 digest over stable, key-sorted JSON.
 
 Imports are data-only and strictly bounded. Gauntlet rejects unknown contracts,
 unexpected vectors, duplicate cases, digest/count mismatches, executable-like
-fields, oversized bundles, reserved built-in identities, and dishonest outcome
+fields, oversized bundles, reserved built-in identities and dishonest outcome
 claims.
 
 ## Deterministic chaos mode
 
-Chaos mode is bounded mutation testing for the TypeScript reference path—not
+Chaos mode is bounded mutation testing for the TypeScript reference path: not
 network load testing.
 
 Available controls:
@@ -340,7 +340,7 @@ Available controls:
 - deterministic latency/jitter **evidence**.
 
 Latency is recorded without sleeping. The suite performs no DNS, HTTP, sockets,
-remote targeting, or public writes. A run is capped at 100 total cases.
+remote targeting or public writes. A run is capped at 100 total cases.
 
 ## Architecture
 
@@ -380,16 +380,16 @@ The API does not accept:
 
 - commands or command arguments;
 - executable paths or environment maps;
-- repositories, URLs, or source code;
+- repositories, URLs or source code;
 - executable uploads;
 - arbitrary implementation metadata.
 
 Python adapters run through a fixed worker and fixed `python3` executable with
-`shell:false`, a five-second timeout, 64 KiB stdin, and 128 KiB stdout. Adapter
+`shell:false`, a five-second timeout, 64 KiB stdin and 128 KiB stdout. Adapter
 failures become bounded, non-sensitive case evidence.
 
 The local CLI is the only arbitrary-executable escape hatch. It runs on the
-operator's machine, remains bounded, recomputes outcomes and digests, and marks
+operator's machine, remains bounded, recomputes outcomes and digests and marks
 the result as self-reported external evidence.
 
 ## Validation
@@ -410,7 +410,7 @@ pnpm --filter @workspace/scripts run gauntlet:self-test
 ```
 
 `result.xml` exports can be uploaded by any CI system that accepts JUnit XML.
-The CLI returns a non-zero exit code for failures, divergences, and errors.
+The CLI returns a non-zero exit code for failures, divergences and errors.
 
 ## Deployment
 
@@ -478,5 +478,5 @@ Vendored components retain their upstream licenses and notices:
 
 Their license and NOTICE files are preserved under
 [`vendor/technocore-adapters/`](vendor/technocore-adapters/). Gauntlet,
-its packaging, and its results are unofficial and do not imply certification or
+its packaging and its results are unofficial and do not imply certification or
 endorsement.

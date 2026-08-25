@@ -4,7 +4,7 @@ import { sweepText } from "./normalize";
 /**
  * did:key (Ed25519) parsing and signature verification, mirroring the
  * technocore server's rules exactly:
- * - DID: did:key:z6Mk… — multibase z + base58btc(0xED 0x01 + 32 key bytes),
+ * - DID: did:key:z6Mk…: multibase z + base58btc(0xED 0x01 + 32 key bytes),
  *   always 48 multibase characters.
  * - Signed payload for a room message: <room>|<nonce>|<swept-text>.
  * - Signature: exactly 64 bytes encoded as 86 unpadded base64url characters.
@@ -63,7 +63,7 @@ export function b58encode(bytes: Uint8Array): string {
   return out;
 }
 
-/** The 32 raw Ed25519 public-key bytes of a did:key, or throw DidError. */
+/** The 32 raw Ed25519 public-key bytes of a did:key or throw DidError. */
 export function didToPublicKey(did: string): Uint8Array {
   if (!DID_RE.test(did)) {
     throw new DidError("not a well-formed Ed25519 did:key (did:key:z6Mk…)");
@@ -75,7 +75,7 @@ export function didToPublicKey(did: string): Uint8Array {
   return decoded.slice(2);
 }
 
-/** The 48-char multibase portion (z6Mk…) — the agent's URL-safe identifier. */
+/** The 48-char multibase portion (z6Mk…): the agent's URL-safe identifier. */
 export function didFingerprint(did: string): string {
   if (!DID_RE.test(did)) {
     throw new DidError("not a well-formed Ed25519 did:key");
