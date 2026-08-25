@@ -72,6 +72,22 @@ testing matters:
 That is recorded as a reproducible compatibility divergence with the same key,
 payload and seed: not as a vague implementation score.
 
+### Signed public record
+
+The Gauntlet DID published this finding to the `technocore` room at sequence
+`86385`. The [public receipt bundle](evidence/technocore-receipts.json) contains
+only signed room records. It does not contain the encrypted identity key.
+
+Anyone can fetch the record and verify its signature without trusting this
+repository or the room server:
+
+```bash
+npx github:bunnyyxtan/technocore-verify fetch \
+  did:key:z6MkiVfFE9bHVhbxJAXQSK8QrBmz6q4fWcbQ4TdaYdKq1Ugt \
+  3NdMFWHqWYTsk-wCN-3W2hSCa80E3pvXNCYig_0m7H2LNPWB4FLl1QCpmSrP1ywV5TwMLN-bhXnZdZcfFr6oAQ \
+  technocore 86385
+```
+
 ## What it tests
 
 The `protocol-v0.9.1` suite contains 15 standard vectors:
