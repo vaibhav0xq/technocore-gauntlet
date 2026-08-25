@@ -1,0 +1,5 @@
+Protocol-only source extract from zunmax/technocore-did-starter at commit
+3cc03a6e908e8776de9fdd465c53d23d31db2e9f.
+
+Included seams: normalize, message_payload, DID, sign, verify, and nonce
+handling. Requests, URLs, network access, and posting workflows are excluded.

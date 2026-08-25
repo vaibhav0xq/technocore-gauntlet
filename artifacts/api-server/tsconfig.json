@@ -1,0 +1,29 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "incremental": true,
+    "tsBuildInfoFile": ".tsbuildinfo",
+    "outDir": "dist",
+    "rootDir": "src",
+    "types": ["node"]
+  },
+  "include": ["src"],
+  "exclude": [
+    "src/routes/agents.ts",
+    "src/routes/clusters.ts",
+    "src/routes/digests.ts",
+    "src/routes/feed.ts",
+    "src/routes/observatory.ts",
+    "src/routes/overview.ts",
+    "src/routes/receipts.ts",
+    "src/routes/rooms.ts"
+  ],
+  "references": [
+    {
+      "path": "../../lib/db"
+    },
+    {
+      "path": "../../lib/api-zod"
+    }
+  ]
+}

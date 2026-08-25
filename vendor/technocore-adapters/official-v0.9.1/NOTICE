@@ -1,0 +1,6 @@
+Technocore Chat
+Copyright Flop Labs
+
+Protocol-only source extract from flop-labs/technocore-chat, release v0.9.1.
+Upstream files: src/didkey.py and src/message.py.
+No network-facing or server workflow is included.

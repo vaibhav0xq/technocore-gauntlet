@@ -1,0 +1,561 @@
+openapi: 3.1.0
+info:
+  # Do not change the title; generated import paths depend on it.
+  title: Api
+  version: 0.9.1
+  description: Deterministic local Technocore protocol conformance and bounded chaos lab
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+  - name: gauntlet
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /protocol:
+    get:
+      operationId: getProtocol
+      tags: [gauntlet]
+      responses:
+        "200":
+          description: Protocol and safety policy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Protocol"
+  /suites:
+    get:
+      operationId: listSuites
+      tags: [gauntlet]
+      responses:
+        "200":
+          description: Available suites
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuiteList"
+  /vectors:
+    get:
+      operationId: listVectors
+      tags: [gauntlet]
+      responses:
+        "200":
+          description: Versioned official-source-derived vectors
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VectorList"
+  /vectors/{id}:
+    get:
+      operationId: getVector
+      tags: [gauntlet]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Vector
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vector"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /runs:
+    get:
+      operationId: listRuns
+      tags: [gauntlet]
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+      responses:
+        "200":
+          description: Bounded newest-first persisted runs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunList"
+    post:
+      operationId: createRun
+      tags: [gauntlet]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RunInput"
+      responses:
+        "201":
+          description: Synchronous deterministic run
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Run"
+        "400":
+          description: Invalid local run request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /runs/{id}:
+    get:
+      operationId: getRun
+      tags: [gauntlet]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Persisted run
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Run"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /runs/{id}/export:
+    get:
+      operationId: exportRun
+      tags: [gauntlet]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: format
+          in: query
+          required: true
+          schema: { type: string, enum: [json, junit] }
+      responses:
+        "200":
+          description: Canonical downloadable JSON evidence or JUnit XML; built-in JSON exports are not importable as external proof
+          headers:
+            Content-Disposition:
+              description: Download filename for the selected export format
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Bundle"
+            application/xml:
+              schema: { type: string }
+  /runs/{id}/replay:
+    post:
+      operationId: replayRun
+      tags: [gauntlet]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReplayInput"
+      responses:
+        "201":
+          description: Exact deterministic replay
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Run"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: Invalid request or imported evidence cannot be replayed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /verify:
+    post:
+      operationId: verifyMessage
+      tags: [gauntlet]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifierInput"
+      responses:
+        "200":
+          description: Local verification result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerifierResult"
+        "400":
+          description: Invalid verifier request shape
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /implementations:
+    get:
+      operationId: listImplementations
+      tags: [gauntlet]
+      responses:
+        "200":
+          description: Local adapters and source basis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImplementationList"
+  /bundles/import:
+    post:
+      operationId: importBundle
+      tags: [gauntlet]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Bundle"
+      responses:
+        "201":
+          description: Structurally validated, self-reported external standard-mode run; not authenticated or certified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Run"
+        "400":
+          description: Invalid, dishonest, built-in, replayed, or unsafe bundle
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string }
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+    ChaosConfig:
+      type: object
+      additionalProperties: false
+      required: [unicodeInsertions, truncations, duplicates, reorderings, latencyMs, jitterMs, nonceBoundary]
+      properties:
+        unicodeInsertions: { type: integer, minimum: 0, maximum: 8, default: 0 }
+        truncations: { type: integer, minimum: 0, maximum: 4, default: 0 }
+        duplicates: { type: integer, minimum: 0, maximum: 4, default: 0 }
+        reorderings: { type: integer, minimum: 0, maximum: 4, default: 0 }
+        latencyMs: { type: integer, minimum: 0, maximum: 250, default: 0 }
+        jitterMs: { type: integer, minimum: 0, maximum: 250, default: 0 }
+        nonceBoundary: { type: boolean, default: false }
+    RunInput:
+      type: object
+      additionalProperties: false
+      required: [suiteId, seed, mode]
+      properties:
+        suiteId: { type: string, minLength: 1, maxLength: 80 }
+        seed: { type: string, minLength: 1, maxLength: 256 }
+        mode: { type: string, enum: [standard, chaos] }
+        config:
+          $ref: "#/components/schemas/ChaosConfig"
+        implementationIds:
+          type: array
+          minItems: 1
+          maxItems: 3
+          uniqueItems: true
+          items:
+            type: string
+            enum: [technocore-ts-reference-local, technocore-python-official-0.9.1, zunmax-did-starter-3cc03a6]
+    ReplayInput:
+      type: object
+      additionalProperties: false
+      properties: {}
+    Evidence:
+      type: object
+      required: [kind, message, data]
+      properties:
+        kind: { type: string }
+        message: { type: string }
+        data:
+          type: object
+          additionalProperties: true
+    ByteDiff:
+      type: object
+      required: [firstMismatch, expectedUtf8Hex, actualUtf8Hex]
+      properties:
+        firstMismatch: { type: integer, minimum: -1 }
+        expectedUtf8Hex: { type: string }
+        actualUtf8Hex: { type: string }
+    RunCase:
+      type: object
+      required: [id, title, category, severity, status, input, expected, actual, expectedCanonical, actualCanonical, byteDiff, durationMs, citation, evidence]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        category: { type: string }
+        severity: { type: string, enum: [info, low, medium, high, critical] }
+        status: { type: string, enum: [pass, fail, unsupported, error] }
+        implementationId: { type: string }
+        input:
+          type: object
+          additionalProperties: true
+        expected: {}
+        actual: {}
+        expectedCanonical: { type: [string, "null"] }
+        actualCanonical: { type: [string, "null"] }
+        byteDiff:
+          oneOf:
+            - $ref: "#/components/schemas/ByteDiff"
+            - type: "null"
+        durationMs: { type: number, minimum: 0 }
+        citation: { type: string }
+        evidence:
+          type: array
+          items:
+            $ref: "#/components/schemas/Evidence"
+    RunCounts:
+      type: object
+      required: [total, passed, failed, errors]
+      properties:
+        total: { type: integer }
+        passed: { type: integer }
+        failed: { type: integer }
+        unsupported: { type: integer, default: 0 }
+        errors: { type: integer, default: 0 }
+    Run:
+      type: object
+      required: [id, suiteId, suiteVersion, implementationId, seed, mode, config, status, counts, startedAt, finishedAt, replayOf, cases]
+      properties:
+        id: { type: string, format: uuid }
+        suiteId: { type: string }
+        suiteVersion: { type: string }
+        implementationId: { type: string }
+        implementationIds:
+          type: array
+          maxItems: 3
+          items: { type: string }
+        implementations:
+          type: array
+          maxItems: 3
+          items:
+            $ref: "#/components/schemas/Implementation"
+        contractDigest: { type: string }
+        vectorDigest: { type: string }
+        bundleDigest: { type: string }
+        summary:
+          $ref: "#/components/schemas/ComparisonSummary"
+        provenance:
+          $ref: "#/components/schemas/Provenance"
+        seed: { type: string }
+        mode: { type: string, enum: [standard, chaos] }
+        config:
+          $ref: "#/components/schemas/ChaosConfig"
+        status: { type: string, enum: [passed, failed, incomplete, error] }
+        counts:
+          $ref: "#/components/schemas/RunCounts"
+        startedAt: { type: string, format: date-time }
+        finishedAt: { type: string, format: date-time }
+        replayOf: { type: [string, "null"], format: uuid }
+        cases:
+          type: array
+          items:
+            $ref: "#/components/schemas/RunCase"
+    RunList:
+      type: object
+      required: [items, limit]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Run"
+        limit: { type: integer }
+    Suite:
+      type: object
+      required: [id, version, title, description, vectorIds, modes]
+      properties:
+        id: { type: string }
+        version: { type: string }
+        title: { type: string }
+        description: { type: string }
+        vectorIds:
+          type: array
+          items: { type: string }
+        modes:
+          type: array
+          items: { type: string, enum: [standard, chaos] }
+    SuiteList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Suite"
+    Vector:
+      type: object
+      required: [id, version, title, category, severity, description, citation, input, expected]
+      properties:
+        id: { type: string }
+        version: { type: string }
+        title: { type: string }
+        category: { type: string }
+        severity: { type: string, enum: [info, low, medium, high, critical] }
+        description: { type: string }
+        citation: { type: string }
+        input:
+          type: object
+          additionalProperties: true
+        expected: {}
+    VectorList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Vector"
+    SafetyPolicy:
+      type: object
+      required: [executionClass, pureLocal, optionalLiveSmoke, forbidden]
+      properties:
+        executionClass: { type: string, enum: [pure-local] }
+        pureLocal:
+          type: array
+          items: { type: string }
+        optionalLiveSmoke:
+          type: object
+          required: [implemented, readOnly, description]
+          properties:
+            implemented: { type: boolean }
+            readOnly: { type: boolean }
+            description: { type: string }
+        forbidden:
+          type: array
+          items: { type: string }
+    Protocol:
+      type: object
+      required: [name, version, canonicalPayload, signatureEncoding, nonceRule, sweepCategories, sourceBasis, safety]
+      properties:
+        name: { type: string }
+        version: { type: string }
+        canonicalPayload: { type: string }
+        signatureEncoding: { type: string }
+        nonceRule: { type: string }
+        sweepCategories:
+          type: array
+          items: { type: string }
+        sourceBasis:
+          type: array
+          items: { type: string }
+        safety:
+          $ref: "#/components/schemas/SafetyPolicy"
+    VerifierInput:
+      type: object
+      additionalProperties: false
+      required: [did, room, nonce, text, signature]
+      properties:
+        did: { type: string }
+        room: { type: string }
+        nonce: { type: string }
+        text: { type: string }
+        signature: { type: string }
+    VerifierResult:
+      type: object
+      required: [valid, canonicalPayload, sweptText, payloadUtf8Hex, publicKeyHex, signatureHex, diagnostics]
+      properties:
+        valid: { type: boolean }
+        canonicalPayload: { type: string }
+        sweptText: { type: string }
+        payloadUtf8Hex: { type: string }
+        publicKeyHex: { type: [string, "null"] }
+        signatureHex: { type: [string, "null"] }
+        diagnostics:
+          type: array
+          items: { type: string }
+    Implementation:
+      type: object
+      required: [id, name, language, version, locality, kind, status, license, sourceRevision, sourceBasis, capabilities, disclaimer, certification]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        language: { type: string }
+        version: { type: string }
+        locality: { type: string, enum: [local] }
+        kind: { type: string, enum: [reference, official-oracle, community, external] }
+        status: { type: string, enum: [built-in, imported] }
+        license: { type: string, minLength: 1, maxLength: 120 }
+        sourceRevision: { type: string, minLength: 1, maxLength: 200 }
+        sourceBasis:
+          type: array
+          items: { type: string }
+        certification: { type: string }
+        capabilities:
+          type: array
+          items: { type: string }
+        disclaimer: { type: string }
+    ImplementationList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Implementation"
+    ComparisonSummary:
+      type: object
+      required: [supported, unsupported, coveragePercent, agreement, divergences]
+      properties:
+        supported: { type: integer }
+        unsupported: { type: integer }
+        coveragePercent: { type: number }
+        agreement: { type: integer }
+        divergences:
+          type: array
+          items: { type: string }
+    Provenance:
+      type: object
+      required: [kind]
+      properties:
+        kind: { type: string, enum: [local, import] }
+        importedAt: { type: string, format: date-time }
+        originalRunId: { type: string, format: uuid }
+        sourceDigest: { type: string, pattern: "^[0-9a-f]{64}$" }
+    Bundle:
+      type: object
+      additionalProperties: false
+      required: [format, contract, digest, run]
+      properties:
+        format: { type: string, enum: [technocore-gauntlet-bundle/v1] }
+        contract: { type: string, enum: [technocore-gauntlet-adapter/v1] }
+        digest: { type: string, pattern: "^[0-9a-f]{64}$" }
+        run:
+          $ref: "#/components/schemas/Run"

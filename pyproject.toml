@@ -1,0 +1,9 @@
+[project]
+name = "technocore-gauntlet-adapters"
+version = "0.1.0"
+description = "Auditable local-only Python protocol adapters for Technocore Gauntlet"
+requires-python = ">=3.12"
+dependencies = [
+    "cryptography==50.0.0",
+    "pynacl==1.6.2",
+]

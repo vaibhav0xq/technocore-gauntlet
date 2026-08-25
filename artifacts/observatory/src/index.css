@@ -1,0 +1,135 @@
+@import url('https://fonts.googleapis.com/css2?family=Chivo:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500;700;800&display=swap');
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-card-border: hsl(var(--border));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-sidebar: hsl(var(--sidebar));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-border: hsl(var(--border));
+  
+  --font-sans: var(--app-font-sans);
+  --font-mono: var(--app-font-mono);
+
+  --radius-sm: var(--radius);
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius);
+  --radius-xl: var(--radius);
+}
+
+:root {
+  --background: 210 20% 98%;
+  --foreground: 0 0% 0%;
+  
+  --border: 214 20% 88%;
+  --input: 214 20% 88%;
+  --ring: 16 100% 50%;
+  
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 0%;
+  
+  --primary: 16 100% 50%;
+  --primary-foreground: 0 0% 100%;
+  
+  --secondary: 214 20% 88%;
+  --secondary-foreground: 0 0% 0%;
+
+  --muted: 210 20% 95%;
+  --muted-foreground: 215 16% 40%;
+
+  --accent: 16 100% 95%;
+  --accent-foreground: 16 100% 40%;
+
+  --destructive: 350 100% 45%;
+  --destructive-foreground: 0 0% 100%;
+
+  --sidebar: 214 24% 94%;
+  --sidebar-foreground: 0 0% 0%;
+
+  --app-font-sans: 'Chivo', sans-serif;
+  --app-font-mono: 'JetBrains Mono', monospace;
+  
+  --radius: 0px; 
+}
+
+.dark {
+  --background: 0 0% 5%;
+  --foreground: 210 20% 98%;
+  
+  --border: 217 20% 20%;
+  --input: 217 20% 20%;
+  --ring: 16 100% 55%;
+  
+  --card: 0 0% 8%;
+  --card-foreground: 210 20% 98%;
+  
+  --primary: 16 100% 55%;
+  --primary-foreground: 0 0% 0%;
+  
+  --muted: 217 20% 15%;
+  --muted-foreground: 215 20% 70%;
+  
+  --accent: 16 100% 15%;
+  --accent-foreground: 16 100% 70%;
+  
+  --secondary: 217 20% 15%;
+  --secondary-foreground: 210 20% 98%;
+  
+  --destructive: 350 100% 60%;
+  --destructive-foreground: 0 0% 100%;
+
+  --sidebar: 0 0% 3%;
+  --sidebar-foreground: 210 20% 98%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+/* Custom scrollbar for an instrument feel */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border: 2px solid hsl(var(--background));
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary));
+}
