@@ -1,35 +1,35 @@
 {
   "format": "technocore-gauntlet-live-probe/v1",
   "target": "https://technocore.chat",
-  "namespace": "gauntlet-probe-f7d2cf09",
+  "namespace": "gauntlet-probe-5fee736e83",
   "key": "probe",
-  "observedAt": "2026-08-25T18:02:11.030Z",
+  "observedAt": "2026-08-25T18:07:44.724Z",
   "documentationSource": [
     "https://technocore.chat/ (CONDITIONAL NOTES section)",
     "https://technocore.chat/openapi.json"
   ],
-  "method": "Each step reads the note, issues one write, then reads it again. A write is counted only when the stored value changed.",
+  "method": "Each step reads the note, issues one write, then reads it again, and every step writes a value distinct from the current one. What is recorded is an observed transition, not proof of causation: notes are world-writable, so a concurrent writer in the same namespace could in principle produce or mask a change. The namespace is random and taken with if_absent=1, which makes that unlikely rather than impossible.",
   "cases": [
     {
-      "id": "seed",
+      "id": "claim-if-absent",
       "lane": "GET",
       "contract": "documented",
       "request": {
         "method": "GET",
-        "url": "/kv/gauntlet-probe-f7d2cf09/probe/set/base",
+        "url": "/kv/gauntlet-probe-5fee736e83/probe/set/base?if_absent=1",
         "body": null
       },
-      "documented": "Unconditional write establishes a known value.",
+      "documented": "if_absent=1 against a key that does not exist. This is also how the probe takes the key.",
       "expected": {
         "status": 200,
-        "writes": true
+        "valueChanges": true
       },
-      "actual": {
+      "observed": {
         "status": 200,
-        "writes": true,
+        "valueChanged": true,
         "valueBefore": null,
         "valueAfter": "base",
-        "responseFirstLine": "ok gauntlet-probe-f7d2cf09/probe 4B 2026-08-25T18:01:49.853893Z"
+        "responseFirstLine": "ok gauntlet-probe-5fee736e83/probe 4B 2026-08-25T18:07:21.320897Z"
       },
       "verdict": "documented-match"
     },
@@ -39,20 +39,20 @@
       "contract": "documented",
       "request": {
         "method": "GET",
-        "url": "/kv/gauntlet-probe-f7d2cf09/probe/set/a?if=WRONG",
+        "url": "/kv/gauntlet-probe-5fee736e83/probe/set/a?if=WRONG",
         "body": null
       },
       "documented": "GET /kv/<ns>/<key>/set/<value>?if=<what you last read>",
       "expected": {
         "status": 409,
-        "writes": false
+        "valueChanges": false
       },
-      "actual": {
+      "observed": {
         "status": 409,
-        "writes": false,
+        "valueChanged": false,
         "valueBefore": "base",
         "valueAfter": "base",
-        "responseFirstLine": "409 note gauntlet-probe-f7d2cf09/probe changed since you read it"
+        "responseFirstLine": "409 note gauntlet-probe-5fee736e83/probe changed since you read it"
       },
       "verdict": "documented-match"
     },
@@ -62,7 +62,7 @@
       "contract": "documented",
       "request": {
         "method": "POST",
-        "url": "/kv/gauntlet-probe-f7d2cf09/probe",
+        "url": "/kv/gauntlet-probe-5fee736e83/probe",
         "body": {
           "value": "b",
           "if": "WRONG"
@@ -71,14 +71,14 @@
       "documented": "POST /kv/<ns>/<key> {\"value\":.., \"if\":..}",
       "expected": {
         "status": 409,
-        "writes": false
+        "valueChanges": false
       },
-      "actual": {
+      "observed": {
         "status": 409,
-        "writes": false,
+        "valueChanged": false,
         "valueBefore": "base",
         "valueAfter": "base",
-        "responseFirstLine": "409 note gauntlet-probe-f7d2cf09/probe changed since you read it"
+        "responseFirstLine": "409 note gauntlet-probe-5fee736e83/probe changed since you read it"
       },
       "verdict": "documented-match"
     },
@@ -88,20 +88,20 @@
       "contract": "documented",
       "request": {
         "method": "GET",
-        "url": "/kv/gauntlet-probe-f7d2cf09/probe/set/c?if=base",
+        "url": "/kv/gauntlet-probe-5fee736e83/probe/set/c?if=base",
         "body": null
       },
       "documented": "A matching if= wins the CAS.",
       "expected": {
         "status": 200,
-        "writes": true
+        "valueChanges": true
       },
-      "actual": {
+      "observed": {
         "status": 200,
-        "writes": true,
+        "valueChanged": true,
         "valueBefore": "base",
         "valueAfter": "c",
-        "responseFirstLine": "ok gauntlet-probe-f7d2cf09/probe 1B 2026-08-25T18:01:56.562082Z"
+        "responseFirstLine": "ok gauntlet-probe-5fee736e83/probe 1B 2026-08-25T18:07:28.031731Z"
       },
       "verdict": "documented-match"
     },
@@ -111,20 +111,46 @@
       "contract": "documented",
       "request": {
         "method": "GET",
-        "url": "/kv/gauntlet-probe-f7d2cf09/probe/set/d?if_absent=1",
+        "url": "/kv/gauntlet-probe-5fee736e83/probe/set/d?if_absent=1",
         "body": null
       },
       "documented": "if_absent=1 against a key that exists.",
       "expected": {
         "status": 409,
-        "writes": false
+        "valueChanges": false
       },
-      "actual": {
+      "observed": {
         "status": 409,
-        "writes": false,
+        "valueChanged": false,
         "valueBefore": "c",
         "valueAfter": "c",
-        "responseFirstLine": "409 note gauntlet-probe-f7d2cf09/probe already exists"
+        "responseFirstLine": "409 note gauntlet-probe-5fee736e83/probe already exists"
+      },
+      "verdict": "documented-match"
+    },
+    {
+      "id": "post-body-if-absent-on-existing",
+      "lane": "POST",
+      "contract": "documented",
+      "request": {
+        "method": "POST",
+        "url": "/kv/gauntlet-probe-5fee736e83/probe",
+        "body": {
+          "value": "e",
+          "if_absent": true
+        }
+      },
+      "documented": "POST /kv/<ns>/<key> {\"value\":.., \"if_absent\":true} against a key that exists.",
+      "expected": {
+        "status": 409,
+        "valueChanges": false
+      },
+      "observed": {
+        "status": 409,
+        "valueChanged": false,
+        "valueBefore": "c",
+        "valueAfter": "c",
+        "responseFirstLine": "409 note gauntlet-probe-5fee736e83/probe already exists"
       },
       "verdict": "documented-match"
     },
@@ -134,19 +160,19 @@
       "contract": "undocumented",
       "request": {
         "method": "POST",
-        "url": "/kv/gauntlet-probe-f7d2cf09/probe?if=WRONG",
+        "url": "/kv/gauntlet-probe-5fee736e83/probe?if=WRONG",
         "body": {
-          "value": "e"
+          "value": "f"
         }
       },
       "documented": "Query form carried onto the POST lane, where the condition belongs in the body.",
       "expected": null,
-      "actual": {
+      "observed": {
         "status": 200,
-        "writes": true,
+        "valueChanged": true,
         "valueBefore": "c",
-        "valueAfter": "e",
-        "responseFirstLine": "ok gauntlet-probe-f7d2cf09/probe 1B 2026-08-25T18:02:01.015357Z"
+        "valueAfter": "f",
+        "responseFirstLine": "ok gauntlet-probe-5fee736e83/probe 1B 2026-08-25T18:07:34.710494Z"
       },
       "verdict": "undocumented-fails-open"
     },
@@ -156,17 +182,17 @@
       "contract": "undocumented",
       "request": {
         "method": "GET",
-        "url": "/kv/gauntlet-probe-f7d2cf09/probe/set/f?iff=WRONG",
+        "url": "/kv/gauntlet-probe-5fee736e83/probe/set/g?iff=WRONG",
         "body": null
       },
       "documented": "Misspelled conditional parameter.",
       "expected": null,
-      "actual": {
+      "observed": {
         "status": 200,
-        "writes": true,
-        "valueBefore": "e",
-        "valueAfter": "f",
-        "responseFirstLine": "ok gauntlet-probe-f7d2cf09/probe 1B 2026-08-25T18:02:03.241809Z"
+        "valueChanged": true,
+        "valueBefore": "f",
+        "valueAfter": "g",
+        "responseFirstLine": "ok gauntlet-probe-5fee736e83/probe 1B 2026-08-25T18:07:36.938191Z"
       },
       "verdict": "undocumented-fails-open"
     },
@@ -176,17 +202,17 @@
       "contract": "undocumented",
       "request": {
         "method": "GET",
-        "url": "/kv/gauntlet-probe-f7d2cf09/probe/set/g?IF=WRONG",
+        "url": "/kv/gauntlet-probe-5fee736e83/probe/set/h?IF=WRONG",
         "body": null
       },
       "documented": "Conditional parameter in the wrong case.",
       "expected": null,
-      "actual": {
+      "observed": {
         "status": 200,
-        "writes": true,
-        "valueBefore": "f",
-        "valueAfter": "g",
-        "responseFirstLine": "ok gauntlet-probe-f7d2cf09/probe 1B 2026-08-25T18:02:05.472526Z"
+        "valueChanged": true,
+        "valueBefore": "g",
+        "valueAfter": "h",
+        "responseFirstLine": "ok gauntlet-probe-5fee736e83/probe 1B 2026-08-25T18:07:39.161221Z"
       },
       "verdict": "undocumented-fails-open"
     },
@@ -196,17 +222,17 @@
       "contract": "undocumented",
       "request": {
         "method": "GET",
-        "url": "/kv/gauntlet-probe-f7d2cf09/probe/set/h?if=",
+        "url": "/kv/gauntlet-probe-5fee736e83/probe/set/i?if=",
         "body": null
       },
       "documented": "Empty expected value.",
       "expected": null,
-      "actual": {
+      "observed": {
         "status": 409,
-        "writes": false,
-        "valueBefore": "g",
-        "valueAfter": "g",
-        "responseFirstLine": "409 note gauntlet-probe-f7d2cf09/probe changed since you read it"
+        "valueChanged": false,
+        "valueBefore": "h",
+        "valueAfter": "h",
+        "responseFirstLine": "409 note gauntlet-probe-5fee736e83/probe changed since you read it"
       },
       "verdict": "undocumented-fails-closed"
     },
@@ -216,26 +242,26 @@
       "contract": "undocumented",
       "request": {
         "method": "POST",
-        "url": "/kv/gauntlet-probe-f7d2cf09/probe",
+        "url": "/kv/gauntlet-probe-5fee736e83/probe",
         "body": {
-          "value": "i",
+          "value": "j",
           "if_absent": "yes"
         }
       },
       "documented": "if_absent as a string rather than a boolean.",
       "expected": null,
-      "actual": {
+      "observed": {
         "status": 409,
-        "writes": false,
-        "valueBefore": "g",
-        "valueAfter": "g",
-        "responseFirstLine": "409 note gauntlet-probe-f7d2cf09/probe already exists"
+        "valueChanged": false,
+        "valueBefore": "h",
+        "valueAfter": "h",
+        "responseFirstLine": "409 note gauntlet-probe-5fee736e83/probe already exists"
       },
       "verdict": "undocumented-fails-closed"
     }
   ],
   "summary": {
-    "documentedChecked": 5,
+    "documentedChecked": 6,
     "documentedDivergences": [],
     "failsOpen": [
       "post-if-in-query",
@@ -247,5 +273,5 @@
       "post-if-absent-wrong-type"
     ]
   },
-  "digest": "20f3bd6202a050e811c1f0545f3d3217872cdc5f875500e52ae1f465985344b1"
+  "digest": "03077b8dfd994b6809675683939bc0aa0329cf696665133e40ce250395c840d0"
 }

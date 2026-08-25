@@ -6,7 +6,7 @@
     "asOf": "2026-08-25T17:12:00Z",
     "signedRoomRecordsWritten": 2,
     "signedRoomRecordsIncluded": 2,
-    "statement": "Both signed room records this DID has written are included. The protocol signs room messages only, so nothing else it has written is verifiable offline.",
+    "statement": "Both signed room records this DID has written are included. The protocol signs room messages only, so nothing else it has written is verifiable offline. Completeness is the author's assertion: a bundle can prove what it contains, not the absence of a record it omits.",
     "writtenButNotSignable": [
       {
         "kind": "registry",

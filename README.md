@@ -22,8 +22,12 @@ independent implementations, preserves the exact evidence produced by each
 adapter and exposes compatibility differences that ordinary happy-path tests
 miss.
 
-It is a **local, deterministic test harness**. It does not fuzz public services,
-post messages, use accounts or mutate `technocore.chat`.
+It is a **local, deterministic test harness**. The suite, the API and the hosted
+site never touch the network: they do not fuzz public services, post messages,
+use accounts or mutate `technocore.chat`. The repository also carries one opt-in
+script that does make live writes, to a namespace it takes for itself, and
+nothing in the suite or the API ever invokes it. See
+[Live behaviour](#live-behaviour-documented-versus-actual).
 
 > [!IMPORTANT]
 > Gauntlet is an unofficial community conformance tool. A passing run is useful
@@ -92,8 +96,9 @@ both signed room records this DID has written: the `lobby` check-in at `497897`
 and the `technocore` post at `86385`. It does not contain the encrypted identity
 key.
 
-That is the complete verifiable set. The protocol signs room messages only, so
-the DID's one other written record, an unsigned registry note at
+That is the complete verifiable set, which is an author's assertion the bundle
+cannot prove on its own: no file can demonstrate the absence of another one. The
+protocol signs room messages only, so the DID's one other written record at
 `/kv/did-34/95a9b584b2cb6a`, cannot be verified offline by anyone.
 
 Verify the signatures with the zero-dependency checker in this repository. It
@@ -149,10 +154,10 @@ stored value actually changed, never because a status code implied it. The
 recorded run is
 [`evidence/live-kv-conditional-write-2026-08-25.json`](evidence/live-kv-conditional-write-2026-08-25.json).
 
-Both documented forms hold. `?if=` on the GET write lane and `"if"` in the POST
-body each returned `409` and left the stored value untouched, and so did
-`?if_absent=1` against a key that exists. No divergence from the documented
-conditional-write contract.
+Every documented form checked out. `?if=` on the GET write lane and `"if"` in
+the POST body each returned `409` and left the stored value untouched; so did
+`if_absent` against an existing key, on both lanes; a matching `?if=` won the
+CAS; and `?if_absent=1` took an absent key. Six documented cases, no divergence.
 
 The near misses are the finding. A conditional parameter the server does not
 recognise is ignored in silence and the write lands unconditionally:
@@ -172,11 +177,13 @@ URL, so moving a working conditional write onto the POST lane while leaving
 becomes last-write-wins. The `200` is indistinguishable from a CAS that was won.
 
 Stated at the strength the evidence supports: these are undocumented inputs, so
-this is a hardening observation, not a conformance failure. The three fail-open
-rows reproduced in four separate throwaway namespaces and the full matrix ran
-end to end twice with identical results. The probe is a standalone script: the
-hosted suite and the API never make live writes, and the safety policy they
-publish continues to forbid it.
+this is a hardening observation and not a conformance failure, and the table is
+what one committed run observed rather than a claim about the service in
+general. Because notes are world-writable, each row is an observed transition,
+not proof that this request caused it. Re-run the probe against a fresh
+namespace to check it yourself: committing the script and not just its output is
+the point. The probe is standalone. The hosted suite and the API never make live
+writes, and the safety policy they publish continues to forbid it.
 
 ## What it tests
 
@@ -579,7 +586,11 @@ Relevant environment variables:
 - Chaos mode is currently TypeScript-reference-only.
 - External bundle evidence is self-reported and unauthenticated. Structural
   validation proves consistency, not who executed the adapter.
-- No live-service smoke test is implemented.
+- The suite implements no live-service smoke test. Live behaviour is covered
+  only by the standalone opt-in probe, which no suite, API route or automated
+  run invokes.
+- The probe records observed transitions in a namespace it takes with
+  `if_absent=1`, not proof of causation: notes are world-writable.
 - The suite intentionally performs no network fuzzing, load testing, posting,
   or account actions.
 
